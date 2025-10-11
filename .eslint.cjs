@@ -1,0 +1,1 @@
+["." , "--ext", "js,jsx,ts,tsx" ]

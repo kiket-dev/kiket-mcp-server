@@ -1,0 +1,9 @@
+{
+  "name": "kiket-mcp-server",
+  "version": "0.1.0",
+  "description": "Provides Kiket issue management tools via the Model Context Protocol.",
+  "capabilities": {
+    "tools": true
+  },
+  "defaultPort": 3001
+}
