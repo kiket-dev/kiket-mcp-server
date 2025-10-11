@@ -81,7 +81,9 @@ export class IssueTools {
   }
 
   private async listIssues(args: unknown) {
-    const filters = IssueListFiltersSchema.parse({ ...args });
+    const filters = IssueListFiltersSchema.parse(
+      typeof args === 'object' && args !== null ? args : {}
+    );
     const mergedFilters = {
       ...filters,
       project_key: filters.project_key ?? this.defaultProjectKey

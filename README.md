@@ -162,3 +162,7 @@ Edit `~/.config/github-copilot/mcp.json`:
 ```
 
 Restart the Copilot CLI (`copilot logout && copilot login`) or run `copilot mcp list` to refresh the session.
+
+## Continuous Integration & Publishing
+
+GitHub Actions (see `.github/workflows/package.yml`) automatically installs dependencies, lints, tests, and builds the package on pushes/PRs. When a GitHub release is published, the workflow also packages the build and publishes `@kiket-dev/mcp-server` to the GitHub Packages registry.
