@@ -47,7 +47,7 @@ export class UserTools {
       case 'getUser':
         return this.getUser(args);
       case 'getCurrentUser':
-        return this.getCurrentUser(args);
+        return this.getCurrentUser();
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -67,7 +67,7 @@ export class UserTools {
     return { user };
   }
 
-  private async getCurrentUser(_args: unknown) {
+  private async getCurrentUser() {
     const user = await this.client.getCurrentUser();
     return { user };
   }

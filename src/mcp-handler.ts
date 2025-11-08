@@ -16,19 +16,19 @@ export class MCPHandler {
     private userTools: UserTools
   ) {}
 
-  async handleMessage(message: any): Promise<any> {
+  async handleMessage(message: Record<string, unknown>): Promise<Record<string, unknown> | undefined> {
     const { id, method, params } = message;
     const requestId = randomUUID();
     const startTime = Date.now();
 
-    if (!method) {
+    if (!method || typeof method !== 'string') {
       return;
     }
 
     log.request('Incoming MCP request', {
       requestId,
       method,
-      params: method === 'tools/call' ? { name: params?.name } : undefined
+      params: method === 'tools/call' && params && typeof params === 'object' ? { name: (params as Record<string, unknown>).name } : undefined
     });
 
     try {
@@ -66,19 +66,22 @@ export class MCPHandler {
           };
 
         case 'tools/call': {
-          const { name, arguments: args } = params ?? {};
+          const toolParams = (params as Record<string, unknown>) ?? {};
+          const { name, arguments: args } = toolParams;
+          const toolName = name as string;
+          const toolArgs = args ?? {};
           try {
             // Try each tool handler in order
             let result;
             try {
-              result = await this.issueTools.call(name, args ?? {});
+              result = await this.issueTools.call(toolName, toolArgs);
             } catch (e) {
               if (e instanceof Error && e.message.includes('Unknown tool')) {
                 try {
-                  result = await this.projectTools.call(name, args ?? {});
+                  result = await this.projectTools.call(toolName, toolArgs);
                 } catch (e2) {
                   if (e2 instanceof Error && e2.message.includes('Unknown tool')) {
-                    result = await this.userTools.call(name, args ?? {});
+                    result = await this.userTools.call(toolName, toolArgs);
                   } else {
                     throw e2;
                   }
@@ -98,7 +101,7 @@ export class MCPHandler {
               error instanceof Error ? errorToJsonRpcCode(error) : JSON_RPC_ERRORS.INTERNAL_ERROR;
             const errorMessage = error instanceof Error ? error.message : 'Tool execution failed';
             const errorData =
-              error instanceof Error && 'details' in error ? (error as any).details : undefined;
+              error instanceof Error && 'details' in error ? (error as Record<string, unknown>).details : undefined;
 
             return {
               jsonrpc: '2.0',
@@ -114,13 +117,13 @@ export class MCPHandler {
 
         case 'ping':
           log.debug('Ping request', { requestId });
-          return { jsonrpc: '2.0', id, result: 'pong' };
+          return { jsonrpc: '2.0', id: id as string, result: 'pong' };
 
         default:
           log.warn('Unknown method', { requestId, method });
           return {
             jsonrpc: '2.0',
-            id,
+            id: id as string,
             error: {
               code: JSON_RPC_ERRORS.METHOD_NOT_FOUND,
               message: `Method ${method} not implemented`
@@ -150,7 +153,7 @@ export class MCPHandler {
         requestId,
         method,
         duration,
-        toolName: method === 'tools/call' ? params?.name : undefined
+        toolName: method === 'tools/call' && params && typeof params === 'object' ? (params as Record<string, unknown>).name as string | undefined : undefined
       });
     }
   }

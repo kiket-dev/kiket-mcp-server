@@ -63,7 +63,10 @@ export class WebSocketTransport implements Transport {
     });
   }
 
-  send(message: any): void {
+  send(message: Record<string, unknown> | undefined): void {
+    if (!message) {
+      return;
+    }
     // Broadcast to all connected clients
     for (const socket of this.sockets) {
       if (socket.readyState === WebSocket.OPEN) {

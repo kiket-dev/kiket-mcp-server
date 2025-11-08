@@ -42,7 +42,7 @@ export class RateLimiter {
           error &&
           typeof error === 'object' &&
           'statusCode' in error &&
-          (error as any).statusCode === 429;
+          (error as { statusCode: number }).statusCode === 429;
 
         // Check if this is a retriable error
         const isRetriable = isRateLimitError || this.isRetriableError(error as Error);
@@ -74,7 +74,7 @@ export class RateLimiter {
   private calculateDelay(attempt: number, isRateLimitError: boolean, error: unknown): number {
     // If server provided a Retry-After header or retryAfter field, use it
     if (isRateLimitError && error && typeof error === 'object' && 'retryAfter' in error) {
-      const retryAfter = (error as any).retryAfter;
+      const retryAfter = (error as { retryAfter: unknown }).retryAfter;
       if (typeof retryAfter === 'number') {
         return Math.min(retryAfter * 1000, this.config.maxDelayMs);
       }
@@ -92,7 +92,7 @@ export class RateLimiter {
   private isRetriableError(error: Error | unknown): boolean {
     // Retry on network errors, 5xx server errors, and 429 rate limits
     if (error && typeof error === 'object' && 'statusCode' in error) {
-      const statusCode = (error as any).statusCode;
+      const statusCode = (error as { statusCode: number }).statusCode;
       return statusCode === 429 || (statusCode >= 500 && statusCode < 600);
     }
 

@@ -2,7 +2,7 @@
  * Base transport interface for MCP server.
  */
 
-export type MessageHandler = (message: any) => Promise<any>;
+export type MessageHandler = (message: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>;
 
 export interface Transport {
   /**
@@ -18,5 +18,5 @@ export interface Transport {
   /**
    * Send a message through the transport.
    */
-  send(message: any): void;
+  send(message: Record<string, unknown> | undefined): void;
 }

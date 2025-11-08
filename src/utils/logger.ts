@@ -40,8 +40,8 @@ export interface RequestContext {
   userId?: string;
   duration?: number;
   error?: string;
-  params?: any;
-  [key: string]: any; // Allow additional properties
+  params?: Record<string, unknown>;
+  [key: string]: unknown; // Allow additional properties
 }
 
 export function logRequest(level: string, message: string, context: RequestContext = {}) {
@@ -50,10 +50,10 @@ export function logRequest(level: string, message: string, context: RequestConte
 
 // Convenience methods
 export const log = {
-  info: (message: string, meta?: any) => logger.info(message, meta),
-  warn: (message: string, meta?: any) => logger.warn(message, meta),
-  error: (message: string, meta?: any) => logger.error(message, meta),
-  debug: (message: string, meta?: any) => logger.debug(message, meta),
+  info: (message: string, meta?: Record<string, unknown>) => logger.info(message, meta),
+  warn: (message: string, meta?: Record<string, unknown>) => logger.warn(message, meta),
+  error: (message: string, meta?: Record<string, unknown>) => logger.error(message, meta),
+  debug: (message: string, meta?: Record<string, unknown>) => logger.debug(message, meta),
 
   // Request-specific logging
   request: (message: string, context: RequestContext) =>

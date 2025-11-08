@@ -20,8 +20,7 @@ import {
 } from '../types/kiket.js';
 import {
   errorFromStatusCode,
-  NetworkError,
-  KiketError
+  NetworkError
 } from '../errors/index.js';
 import { rateLimiter } from '../utils/rate-limiter.js';
 import { z } from 'zod';

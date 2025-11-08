@@ -39,7 +39,9 @@ export class StdioTransport implements Transport {
     }
   }
 
-  send(message: any): void {
-    process.stdout.write(JSON.stringify(message) + '\n');
+  send(message: Record<string, unknown> | undefined): void {
+    if (message) {
+      process.stdout.write(JSON.stringify(message) + '\n');
+    }
   }
 }

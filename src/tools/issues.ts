@@ -4,8 +4,7 @@ import {
   IssueListFiltersSchema,
   IssueInputSchema,
   IssueSchema,
-  IssueUpdateSchema,
-  CommentSchema
+  IssueUpdateSchema
 } from '../types/kiket.js';
 import { KiketClient } from '../clients/kiket.js';
 
