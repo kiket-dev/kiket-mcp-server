@@ -8,7 +8,15 @@ import {
   IssueListFilters,
   CommentSchema,
   Comment,
-  CommentInput
+  CommentInput,
+  ProjectSchema,
+  Project,
+  ProjectInput,
+  ProjectUpdate,
+  ProjectListFilters,
+  UserSchema,
+  User,
+  UserListFilters
 } from '../types/kiket.js';
 import {
   errorFromStatusCode,
@@ -119,5 +127,46 @@ export class KiketClient {
 
   async deleteComment(issueIdOrKey: string | number, commentId: number): Promise<void> {
     await this.client.delete(`/api/v1/ext/issues/${issueIdOrKey}/comments/${commentId}`);
+  }
+
+  // Projects
+  async listProjects(filters: ProjectListFilters = {}): Promise<Project[]> {
+    const response = await this.client.get('/api/v1/projects', { params: filters });
+    return z.array(ProjectSchema).parse(response.data.projects ?? response.data);
+  }
+
+  async getProject(id: number): Promise<Project> {
+    const response = await this.client.get(`/api/v1/projects/${id}`);
+    return ProjectSchema.parse(response.data.project ?? response.data);
+  }
+
+  async createProject(payload: ProjectInput): Promise<Project> {
+    const response = await this.client.post('/api/v1/projects', { project: payload });
+    return ProjectSchema.parse(response.data.project ?? response.data);
+  }
+
+  async updateProject(id: number, payload: ProjectUpdate): Promise<Project> {
+    const response = await this.client.patch(`/api/v1/projects/${id}`, { project: payload });
+    return ProjectSchema.parse(response.data.project ?? response.data);
+  }
+
+  async deleteProject(id: number): Promise<void> {
+    await this.client.delete(`/api/v1/projects/${id}`);
+  }
+
+  // Users
+  async listUsers(filters: UserListFilters = {}): Promise<User[]> {
+    const response = await this.client.get('/api/v1/ext/project/members', { params: filters });
+    return z.array(UserSchema).parse(response.data.members ?? response.data.users ?? response.data);
+  }
+
+  async getUser(id: number): Promise<User> {
+    const response = await this.client.get(`/api/v1/users/${id}`);
+    return UserSchema.parse(response.data.user ?? response.data);
+  }
+
+  async getCurrentUser(): Promise<User> {
+    const response = await this.client.get('/api/v1/me');
+    return UserSchema.parse(response.data.user ?? response.data);
   }
 }

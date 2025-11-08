@@ -1,6 +1,8 @@
 import { loadEnv } from './utils/env.js';
 import { KiketClient } from './clients/kiket.js';
 import { IssueTools } from './tools/issues.js';
+import { ProjectTools } from './tools/projects.js';
+import { UserTools } from './tools/users.js';
 import { MCPHandler } from './mcp-handler.js';
 import { StdioTransport } from './transports/stdio.js';
 import { WebSocketTransport } from './transports/websocket.js';
@@ -18,7 +20,9 @@ const client = new KiketClient({
 });
 
 const issueTools = new IssueTools(client, env.projectKey);
-const handler = new MCPHandler(issueTools);
+const projectTools = new ProjectTools(client);
+const userTools = new UserTools(client);
+const handler = new MCPHandler(issueTools, projectTools, userTools);
 
 // Select transport based on environment
 const transport =

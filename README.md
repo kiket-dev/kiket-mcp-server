@@ -1,24 +1,36 @@
 # Kiket MCP Server
 
-Model Context Protocol (MCP) server that provides AI tools to interact with Kiket issues, comments, and workflows. Enables Claude, GitHub Copilot, OpenAI Codex, Gemini, and other AI assistants to manage Kiket programmatically.
+Model Context Protocol (MCP) server that provides AI tools to interact with Kiket issues, comments, projects, and users. Enables Claude, GitHub Copilot, OpenAI Codex, Gemini, and other AI assistants to manage Kiket programmatically.
 
 ## Features
 
-- **9 MCP Tools** for comprehensive issue management:
-  - `listIssues` - List issues with filters
-  - `getIssue` - Fetch single issue
-  - `createIssue` - Create new issue
-  - `updateIssue` - Update issue fields
-  - `transitionIssue` - Move issue through workflow
-  - `listComments` - List comments on issue
-  - `createComment` - Add comment to issue
-  - `updateComment` - Update existing comment
-  - `deleteComment` - Delete comment
+- **17 MCP Tools** for comprehensive Kiket management:
+  - **Issues** (5 tools):
+    - `listIssues` - List issues with filters
+    - `getIssue` - Fetch single issue
+    - `createIssue` - Create new issue
+    - `updateIssue` - Update issue fields
+    - `transitionIssue` - Move issue through workflow
+  - **Comments** (4 tools):
+    - `listComments` - List comments on issue
+    - `createComment` - Add comment to issue
+    - `updateComment` - Update existing comment
+    - `deleteComment` - Delete comment
+  - **Projects** (5 tools):
+    - `listProjects` - List all visible projects
+    - `getProject` - Fetch single project
+    - `createProject` - Create new project
+    - `updateProject` - Update project settings
+    - `deleteProject` - Archive/delete project
+  - **Users** (3 tools):
+    - `listUsers` - List project members
+    - `getUser` - Fetch user details
+    - `getCurrentUser` - Get authenticated user
 - **Dual Transport Support**: WebSocket (Claude Desktop) and stdio (Codex, Copilot, Gemini)
 - **Robust Error Handling**: Detailed JSON-RPC error codes with helpful messages
 - **Health Checks**: HTTP endpoints for monitoring and Kubernetes readiness probes
 - **Type-Safe**: Full TypeScript with Zod validation
-- **Comprehensive Tests**: 37+ test cases with Vitest
+- **Comprehensive Tests**: 55+ test cases with Vitest
 
 ## Quick Start
 
@@ -149,6 +161,76 @@ MCP_TRANSPORT=stdio npm run dev
   "issue_id": 123,
   "comment_id": 789
 }
+```
+
+### Project Management
+
+**`listProjects`**
+```json
+{
+  "page": 1,
+  "per_page": 50
+}
+```
+
+**`getProject`**
+```json
+{
+  "id": 5
+}
+```
+
+**`createProject`**
+```json
+{
+  "name": "Platform Redesign",
+  "description": "Complete platform UI/UX overhaul",
+  "project_key": "REDESIGN",
+  "github_repo_url": "https://github.com/org/platform-redesign",
+  "visibility": "private",
+  "start_date": "2025-01-01",
+  "end_date": "2025-12-31",
+  "lead_id": 42
+}
+```
+
+**`updateProject`**
+```json
+{
+  "id": 5,
+  "name": "Updated Project Name",
+  "description": "Updated description",
+  "visibility": "team"
+}
+```
+
+**`deleteProject`**
+```json
+{
+  "id": 5
+}
+```
+
+### User Management
+
+**`listUsers`**
+```json
+{
+  "page": 1,
+  "per_page": 50
+}
+```
+
+**`getUser`**
+```json
+{
+  "id": 42
+}
+```
+
+**`getCurrentUser`**
+```json
+{}
 ```
 
 ## Client Configuration
@@ -421,9 +503,11 @@ spec:
 The server includes comprehensive tests:
 
 - **Error handling** (19 tests)
-- **MCP protocol** (8 tests)
+- **MCP protocol** (10 tests)
 - **Kiket client** (3 tests)
 - **Issue tools** (7 tests)
+- **Project tools** (9 tests)
+- **User tools** (7 tests)
 
 Run tests:
 ```bash
