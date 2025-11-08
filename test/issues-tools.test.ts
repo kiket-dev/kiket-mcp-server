@@ -21,7 +21,11 @@ describe('IssueTools', () => {
       'getIssue',
       'createIssue',
       'updateIssue',
-      'transitionIssue'
+      'transitionIssue',
+      'listComments',
+      'createComment',
+      'updateComment',
+      'deleteComment'
     ]);
   });
 

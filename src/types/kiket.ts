@@ -49,3 +49,24 @@ export const IssueListFiltersSchema = z.object({
 });
 
 export type IssueListFilters = z.infer<typeof IssueListFiltersSchema>;
+
+// Comments
+export const CommentSchema = z.object({
+  id: z.number(),
+  body: z.string(),
+  author: z.object({
+    id: z.number(),
+    name: z.string().nullable(),
+    email: z.string().nullable()
+  }),
+  created_at: z.string(),
+  updated_at: z.string()
+});
+
+export type Comment = z.infer<typeof CommentSchema>;
+
+export const CommentInputSchema = z.object({
+  body: z.string().min(1)
+});
+
+export type CommentInput = z.infer<typeof CommentInputSchema>;

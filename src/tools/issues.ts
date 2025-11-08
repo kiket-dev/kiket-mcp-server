@@ -4,7 +4,8 @@ import {
   IssueListFiltersSchema,
   IssueInputSchema,
   IssueSchema,
-  IssueUpdateSchema
+  IssueUpdateSchema,
+  CommentSchema
 } from '../types/kiket.js';
 import { KiketClient } from '../clients/kiket.js';
 
@@ -15,6 +16,26 @@ const transitionInputSchema = z.object({
 
 const identifierSchema = z.object({
   id: z.union([z.string(), z.number()])
+});
+
+const commentListSchema = z.object({
+  issue_id: z.union([z.string(), z.number()])
+});
+
+const commentCreateSchema = z.object({
+  issue_id: z.union([z.string(), z.number()]),
+  body: z.string().min(1)
+});
+
+const commentUpdateSchema = z.object({
+  issue_id: z.union([z.string(), z.number()]),
+  comment_id: z.number(),
+  body: z.string().min(1)
+});
+
+const commentDeleteSchema = z.object({
+  issue_id: z.union([z.string(), z.number()]),
+  comment_id: z.number()
 });
 
 export type ToolDefinition = {
@@ -55,6 +76,26 @@ export class IssueTools {
         name: 'transitionIssue',
         description: 'Move an issue to a different workflow state using a transition key.',
         inputSchema: zodToJsonSchema(transitionInputSchema, 'transitionIssueInput')
+      },
+      {
+        name: 'listComments',
+        description: 'List all comments on an issue.',
+        inputSchema: zodToJsonSchema(commentListSchema, 'listCommentsInput')
+      },
+      {
+        name: 'createComment',
+        description: 'Add a comment to an issue.',
+        inputSchema: zodToJsonSchema(commentCreateSchema, 'createCommentInput')
+      },
+      {
+        name: 'updateComment',
+        description: 'Update an existing comment on an issue.',
+        inputSchema: zodToJsonSchema(commentUpdateSchema, 'updateCommentInput')
+      },
+      {
+        name: 'deleteComment',
+        description: 'Delete a comment from an issue.',
+        inputSchema: zodToJsonSchema(commentDeleteSchema, 'deleteCommentInput')
       }
     ];
   }
@@ -75,6 +116,14 @@ export class IssueTools {
         return this.updateIssue(args);
       case 'transitionIssue':
         return this.transitionIssue(args);
+      case 'listComments':
+        return this.listComments(args);
+      case 'createComment':
+        return this.createComment(args);
+      case 'updateComment':
+        return this.updateComment(args);
+      case 'deleteComment':
+        return this.deleteComment(args);
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -117,6 +166,30 @@ export class IssueTools {
     const { id, transition } = transitionInputSchema.parse(args);
     const issue = await this.client.transitionIssue(id, transition);
     return { issue };
+  }
+
+  private async listComments(args: unknown) {
+    const { issue_id } = commentListSchema.parse(args);
+    const comments = await this.client.listComments(issue_id);
+    return { comments };
+  }
+
+  private async createComment(args: unknown) {
+    const { issue_id, body } = commentCreateSchema.parse(args);
+    const comment = await this.client.createComment(issue_id, { body });
+    return { comment };
+  }
+
+  private async updateComment(args: unknown) {
+    const { issue_id, comment_id, body } = commentUpdateSchema.parse(args);
+    const comment = await this.client.updateComment(issue_id, comment_id, { body });
+    return { comment };
+  }
+
+  private async deleteComment(args: unknown) {
+    const { issue_id, comment_id } = commentDeleteSchema.parse(args);
+    await this.client.deleteComment(issue_id, comment_id);
+    return { success: true };
   }
 }
 

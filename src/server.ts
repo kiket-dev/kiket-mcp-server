@@ -1,10 +1,15 @@
-import { WebSocketServer } from 'ws';
 import { loadEnv } from './utils/env.js';
 import { KiketClient } from './clients/kiket.js';
 import { IssueTools } from './tools/issues.js';
+import { MCPHandler } from './mcp-handler.js';
+import { StdioTransport } from './transports/stdio.js';
+import { WebSocketTransport } from './transports/websocket.js';
+import { HealthServer } from './health.js';
 
 const env = loadEnv();
 const port = Number(process.env.MCP_PORT || 3001);
+const healthPort = Number(process.env.HEALTH_PORT || 8080);
+const transportType = process.env.MCP_TRANSPORT || 'websocket';
 
 const client = new KiketClient({
   baseUrl: env.apiUrl,
@@ -13,99 +18,38 @@ const client = new KiketClient({
 });
 
 const issueTools = new IssueTools(client, env.projectKey);
+const handler = new MCPHandler(issueTools);
 
-const server = new WebSocketServer({ port });
-console.log(`Kiket MCP server listening on ws://localhost:${port}`);
+// Select transport based on environment
+const transport =
+  transportType === 'stdio' ? new StdioTransport() : new WebSocketTransport(port);
 
-server.on('connection', (socket) => {
-  socket.on('message', async (raw) => {
-    try {
-      const message = JSON.parse(raw.toString());
-      const { id, method, params } = message;
+// Start health check server (only for WebSocket mode)
+let healthServer: HealthServer | undefined;
+if (transportType !== 'stdio') {
+  healthServer = new HealthServer(healthPort, client);
+  healthServer.start();
+}
 
-      if (!method) {
-        return;
-      }
-
-      switch (method) {
-        case 'initialize':
-          socket.send(
-            JSON.stringify({
-              jsonrpc: '2.0',
-              id,
-              result: {
-                protocolVersion: '0.1',
-                serverInfo: {
-                  name: 'kiket-mcp-server',
-                  version: '0.1.0'
-                },
-                capabilities: {
-                  tools: {
-                    list: true,
-                    call: true
-                  }
-                }
-              }
-            })
-          );
-          break;
-        case 'tools/list':
-          socket.send(
-            JSON.stringify({
-              jsonrpc: '2.0',
-              id,
-              result: {
-                tools: issueTools.listToolDefinitions()
-              }
-            })
-          );
-          break;
-        case 'tools/call': {
-          const { name, arguments: args } = params ?? {};
-          try {
-            const result = await issueTools.call(name, args ?? {});
-            socket.send(
-              JSON.stringify({
-                jsonrpc: '2.0',
-                id,
-                result
-              })
-            );
-          } catch (error) {
-            socket.send(
-              JSON.stringify({
-                jsonrpc: '2.0',
-                id,
-                error: {
-                  code: -32001,
-                  message: error instanceof Error ? error.message : 'Tool execution failed'
-                }
-              })
-            );
-          }
-          break;
-        }
-        case 'ping':
-          socket.send(JSON.stringify({ jsonrpc: '2.0', id, result: 'pong' }));
-          break;
-        default:
-          socket.send(
-            JSON.stringify({
-              jsonrpc: '2.0',
-              id,
-              error: {
-                code: -32601,
-                message: `Method ${method} not implemented`
-              }
-            })
-          );
-      }
-    } catch (error) {
-      console.error('Failed to process message', error);
-    }
+// Start MCP server
+transport
+  .start((message) => handler.handleMessage(message))
+  .catch((err) => {
+    console.error('Failed to start MCP server:', err);
+    process.exit(1);
   });
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\nShutting down MCP server...');
+  await transport.stop();
+  if (healthServer) await healthServer.stop();
+  process.exit(0);
 });
 
-server.on('error', (err) => {
-  console.error('WebSocket server error', err);
+process.on('SIGTERM', async () => {
+  console.log('\nShutting down MCP server...');
+  await transport.stop();
+  if (healthServer) await healthServer.stop();
+  process.exit(0);
 });

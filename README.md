@@ -1,71 +1,185 @@
 # Kiket MCP Server
 
-Model Context Protocol (MCP) server that lets tools manipulate Kiket issues (list, fetch, create, update, transition) through a WebSocket interface.
+Model Context Protocol (MCP) server that provides AI tools to interact with Kiket issues, comments, and workflows. Enables Claude, GitHub Copilot, OpenAI Codex, Gemini, and other AI assistants to manage Kiket programmatically.
+
+## Features
+
+- **9 MCP Tools** for comprehensive issue management:
+  - `listIssues` - List issues with filters
+  - `getIssue` - Fetch single issue
+  - `createIssue` - Create new issue
+  - `updateIssue` - Update issue fields
+  - `transitionIssue` - Move issue through workflow
+  - `listComments` - List comments on issue
+  - `createComment` - Add comment to issue
+  - `updateComment` - Update existing comment
+  - `deleteComment` - Delete comment
+- **Dual Transport Support**: WebSocket (Claude Desktop) and stdio (Codex, Copilot, Gemini)
+- **Robust Error Handling**: Detailed JSON-RPC error codes with helpful messages
+- **Health Checks**: HTTP endpoints for monitoring and Kubernetes readiness probes
+- **Type-Safe**: Full TypeScript with Zod validation
+- **Comprehensive Tests**: 37+ test cases with Vitest
 
 ## Quick Start
 
 ```bash
-cd mcp-server
-cp .env.example .env.local
-# fill in KIKET_API_URL and KIKET_API_KEY (can be a personal access token)
-
 npm install
+cp .env.example .env.local
+# Edit .env.local with your KIKET_API_URL and KIKET_API_KEY
 npm run dev
 ```
 
-The server listens on `ws://localhost:3001` by default. Configure a MCP client to connect and invoke the following tools:
+The server starts on:
+- **WebSocket**: `ws://localhost:3001` (MCP protocol)
+- **Health checks**: `http://localhost:8080` (HTTP)
 
-| Tool | Description |
-| --- | --- |
-| `listIssues` | List issues with optional filters (`status`, `assignee_id`, `label`, `project_key`). |
-| `getIssue` | Fetch a single issue by ID or key. |
-| `createIssue` | Create a new issue. `title` is required; if `project_key` is omitted the default from env is used. |
-| `updateIssue` | Update fields on an existing issue. Provide `id` and any fields to change. |
-| `transitionIssue` | Apply a workflow transition (`transition` key) to an issue. |
+## Environment Variables
 
-### Environment Variables
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `KIKET_API_URL` | - | Base URL of Kiket instance (e.g. `https://www.kiket.dev`) |
+| `KIKET_API_KEY` | - | Personal access token with issue permissions |
+| `KIKET_PROJECT_KEY` | - | Default project for operations (optional) |
+| `KIKET_VERIFY_SSL` | `true` | Set to `false` to skip TLS verification in dev |
+| `MCP_TRANSPORT` | `websocket` | Transport mode: `websocket` or `stdio` |
+| `MCP_PORT` | `3001` | WebSocket port (websocket mode only) |
+| `HEALTH_PORT` | `8080` | Health check HTTP port (websocket mode only) |
 
-- `KIKET_API_URL` – Base URL of your Kiket instance (e.g. `https://app.kiket.dev`).
-- `KIKET_API_KEY` – API token with issue read/write permissions.
-- `KIKET_PROJECT_KEY` *(optional)* – Default project key when creating or listing issues.
-- `KIKET_VERIFY_SSL` *(optional, default `true`)* – Set to `false` to skip TLS verification in development.
-- `MCP_PORT` *(optional)* – WebSocket port (defaults to `3001`).
+## Transport Modes
 
-### MCP Manifest
+### WebSocket Mode (Default)
 
-`mcp.json` advertises:
+For clients like Claude Desktop that connect via WebSocket:
 
+```bash
+MCP_TRANSPORT=websocket npm run dev
+```
+
+### Stdio Mode
+
+For clients like OpenAI Codex, Gemini, GitHub Copilot that use stdin/stdout:
+
+```bash
+MCP_TRANSPORT=stdio npm run dev
+```
+
+## Available Tools
+
+### Issue Management
+
+**`listIssues`**
 ```json
 {
-  "name": "kiket-mcp-server",
-  "version": "0.1.0",
-  "capabilities": { "tools": true },
-  "defaultPort": 3001
+  "status": "open",
+  "assignee_id": 42,
+  "label": "bug",
+  "project_key": "BACKEND",
+  "search": "authentication",
+  "page": 1,
+  "per_page": 50
 }
 ```
 
-Configure your MCP client to load this manifest and connect to the server.
-
-## Scripts
-
-- `npm run dev` – start the MCP WebSocket server (ts-node, auto recompilation friendly).
-- `npm run lint` – run ESLint.
-- `npm run test` – execute Vitest unit tests.
-- `npm run build` – compile TypeScript to `dist/`.
-
-## Testing
-
-Vitest covers the Kiket client and tool behaviors. Tests run offline by mocking the Kiket REST API, so no external dependency is required.
-
-```bash
-npm test
+**`getIssue`**
+```json
+{
+  "id": 123  // or "PROJ-45"
+}
 ```
 
-## MCP Client Configuration Examples
+**`createIssue`**
+```json
+{
+  "title": "Fix login bug",
+  "description": "Users cannot log in",
+  "project_key": "BACKEND",
+  "priority": "high",
+  "assignee_id": 42,
+  "labels": ["bug", "security"]
+}
+```
 
-### OpenAI Codex / `o3-mini` CLI
+**`updateIssue`**
+```json
+{
+  "id": 123,
+  "title": "Updated title",
+  "priority": "critical",
+  "assignee_id": 99
+}
+```
 
-Add the manifest to `~/.config/openai/mcp.json` (create the file if it does not exist):
+**`transitionIssue`**
+```json
+{
+  "id": 123,
+  "transition": "start_progress"
+}
+```
+
+### Comment Management
+
+**`listComments`**
+```json
+{
+  "issue_id": 123
+}
+```
+
+**`createComment`**
+```json
+{
+  "issue_id": 123,
+  "body": "This is fixed in PR #456"
+}
+```
+
+**`updateComment`**
+```json
+{
+  "issue_id": 123,
+  "comment_id": 789,
+  "body": "Updated comment text"
+}
+```
+
+**`deleteComment`**
+```json
+{
+  "issue_id": 123,
+  "comment_id": 789
+}
+```
+
+## Client Configuration
+
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
+
+```json
+{
+  "mcpServers": {
+    "kiket": {
+      "command": "node",
+      "args": [
+        "--loader",
+        "ts-node/esm",
+        "/path/to/kiket/mcp-server/src/server.ts"
+      ],
+      "env": {
+        "KIKET_API_URL": "https://www.kiket.dev",
+        "KIKET_API_KEY": "sk-...",
+        "KIKET_PROJECT_KEY": "BACKEND"
+      }
+    }
+  }
+}
+```
+
+### OpenAI Codex / o3-mini CLI
+
+Edit `~/.config/openai/mcp.json`:
 
 ```json
 {
@@ -78,64 +192,14 @@ Add the manifest to `~/.config/openai/mcp.json` (create the file if it does not 
         "/path/to/kiket/mcp-server/src/server.ts"
       ],
       "env": {
-        "KIKET_API_URL": "https://app.kiket.dev",
-        "KIKET_API_KEY": "sk-...",
-        "KIKET_PROJECT_KEY": "KIKET"
+        "MCP_TRANSPORT": "stdio",
+        "KIKET_API_URL": "https://www.kiket.dev",
+        "KIKET_API_KEY": "sk-..."
       }
     }
   }
 }
 ```
-
-Restart the Codex CLI and run `@tools list` to confirm the Kiket tools are available.
-
-### Claude Desktop / `claude_app_config.json`
-
-Update Claude’s MCP configuration (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "kiket": {
-      "type": "websocket",
-      "transport": {
-        "type": "websocket",
-        "url": "ws://localhost:3001"
-      },
-      "env": {
-        "KIKET_API_URL": "https://app.kiket.dev",
-        "KIKET_API_KEY": "sk-...",
-        "KIKET_PROJECT_KEY": "KIKET"
-      }
-    }
-  }
-}
-```
-
-Run `npm run dev` beforehand so the WebSocket server is listening.
-
-### Gemini CLI (`aistudio`)
-
-Create or update `~/.config/aistudio/mcp_servers.json`:
-
-```json
-{
-  "kiket": {
-    "command": "node",
-    "args": [
-      "--loader",
-      "ts-node/esm",
-      "/path/to/kiket/mcp-server/src/server.ts"
-    ],
-    "env": {
-      "KIKET_API_URL": "https://app.kiket.dev",
-      "KIKET_API_KEY": "sk-..."
-    }
-  }
-}
-```
-
-Run `aistudio mcp list` to ensure the server registers correctly.
 
 ### GitHub Copilot CLI
 
@@ -152,17 +216,235 @@ Edit `~/.config/github-copilot/mcp.json`:
         "/path/to/kiket/mcp-server/src/server.ts"
       ],
       "env": {
-        "KIKET_API_URL": "https://app.kiket.dev",
-        "KIKET_API_KEY": "ghp_...",
-        "KIKET_PROJECT_KEY": "KIKET"
+        "MCP_TRANSPORT": "stdio",
+        "KIKET_API_URL": "https://www.kiket.dev",
+        "KIKET_API_KEY": "ghp_..."
       }
     }
   }
 }
 ```
 
-Restart the Copilot CLI (`copilot logout && copilot login`) or run `copilot mcp list` to refresh the session.
+### Gemini CLI (aistudio)
 
-## Continuous Integration & Publishing
+Edit `~/.config/aistudio/mcp_servers.json`:
 
-GitHub Actions (see `.github/workflows/package.yml`) automatically installs dependencies, lints, tests, and builds the package on pushes/PRs. When a GitHub release is published, the workflow also packages the build and publishes `@kiket-dev/mcp-server` to the GitHub Packages registry.
+```json
+{
+  "kiket": {
+    "command": "node",
+    "args": [
+      "--loader",
+      "ts-node/esm",
+      "/path/to/kiket/mcp-server/src/server.ts"
+    ],
+    "env": {
+      "MCP_TRANSPORT": "stdio",
+      "KIKET_API_URL": "https://www.kiket.dev",
+      "KIKET_API_KEY": "sk-..."
+    }
+  }
+}
+```
+
+## Health Checks
+
+The health check server (WebSocket mode only) provides endpoints for monitoring:
+
+**Liveness Probe** - Is the server running?
+```bash
+curl http://localhost:8080/health
+```
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-01-10T12:00:00.000Z",
+  "uptime": 3600.5
+}
+```
+
+**Readiness Probe** - Can the server handle requests?
+```bash
+curl http://localhost:8080/ready
+```
+```json
+{
+  "ready": true,
+  "timestamp": "2025-01-10T12:00:00.000Z"
+}
+```
+
+**Detailed Health Check**
+```bash
+curl http://localhost:8080/health/details
+```
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-01-10T12:00:00.000Z",
+  "checks": {
+    "api": {
+      "healthy": true,
+      "latency": 45
+    }
+  }
+}
+```
+
+## Error Handling
+
+The server provides detailed JSON-RPC error codes:
+
+| Code | Error Type | Description |
+|------|------------|-------------|
+| `-32001` | Authentication Error | Invalid or missing API key |
+| `-32002` | Authorization Error | Insufficient permissions |
+| `-32003` | Not Found | Resource doesn't exist |
+| `-32004` | Validation Error | Invalid input data |
+| `-32005` | Rate Limit | Too many requests |
+| `-32006` | Server Error | Kiket API error |
+| `-32603` | Internal Error | Unexpected server error |
+
+Example error response:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32003,
+    "message": "Issue not found: 999",
+    "data": null
+  }
+}
+```
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Lint code
+npm run lint
+
+# Build TypeScript
+npm run build
+
+# Start in dev mode
+npm run dev
+```
+
+## Docker Deployment
+
+```dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+RUN npm run build
+
+EXPOSE 3001 8080
+
+CMD ["node", "dist/server.js"]
+```
+
+```bash
+docker build -t kiket-mcp-server .
+docker run -p 3001:3001 -p 8080:8080 \
+  -e KIKET_API_URL=https://www.kiket.dev \
+  -e KIKET_API_KEY=sk-... \
+  kiket-mcp-server
+```
+
+## Kubernetes Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiket-mcp-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kiket-mcp-server
+  template:
+    metadata:
+      labels:
+        app: kiket-mcp-server
+    spec:
+      containers:
+      - name: mcp-server
+        image: kiket-mcp-server:latest
+        ports:
+        - containerPort: 3001
+          name: websocket
+        - containerPort: 8080
+          name: health
+        env:
+        - name: KIKET_API_URL
+          valueFrom:
+            secretKeyRef:
+              name: kiket-credentials
+              key: api-url
+        - name: KIKET_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: kiket-credentials
+              key: api-key
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+```
+
+## Testing
+
+The server includes comprehensive tests:
+
+- **Error handling** (19 tests)
+- **MCP protocol** (8 tests)
+- **Kiket client** (3 tests)
+- **Issue tools** (7 tests)
+
+Run tests:
+```bash
+npm test
+```
+
+## CI/CD
+
+GitHub Actions automatically:
+- Runs tests on push/PR
+- Lints code
+- Builds TypeScript
+- Publishes to GitHub Packages on release
+- Attaches tarball to GitHub releases
+
+## License
+
+MIT
+
+## Support
+
+- Documentation: https://docs.kiket.dev/extensions/mcp-server
+- Issues: https://github.com/kiket-dev/kiket/issues
+- Slack: https://kiket.dev/slack

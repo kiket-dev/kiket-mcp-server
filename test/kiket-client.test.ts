@@ -11,7 +11,15 @@ const mockedAxios = axios as unknown as {
 const mockInstance = {
   get: vi.fn(),
   post: vi.fn(),
-  patch: vi.fn()
+  patch: vi.fn(),
+  interceptors: {
+    request: {
+      use: vi.fn()
+    },
+    response: {
+      use: vi.fn()
+    }
+  }
 };
 
 describe('KiketClient', () => {
