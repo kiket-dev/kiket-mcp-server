@@ -28,7 +28,10 @@ Model Context Protocol (MCP) server that provides AI tools to interact with Kike
     - `getCurrentUser` - Get authenticated user
 - **Dual Transport Support**: WebSocket (Claude Desktop) and stdio (Codex, Copilot, Gemini)
 - **Robust Error Handling**: Detailed JSON-RPC error codes with helpful messages
-- **Health Checks**: HTTP endpoints for monitoring and Kubernetes readiness probes
+- **Production Ready**:
+  - **Structured Logging**: Winston-based logging with JSON output for production
+  - **Rate Limiting**: Automatic retry with exponential backoff (429, 5xx errors)
+  - **Health Checks**: HTTP endpoints for monitoring and Kubernetes readiness probes
 - **Type-Safe**: Full TypeScript with Zod validation
 - **Comprehensive Tests**: 55+ test cases with Vitest
 
@@ -56,6 +59,8 @@ The server starts on:
 | `MCP_TRANSPORT` | `websocket` | Transport mode: `websocket` or `stdio` |
 | `MCP_PORT` | `3001` | WebSocket port (websocket mode only) |
 | `HEALTH_PORT` | `8080` | Health check HTTP port (websocket mode only) |
+| `LOG_LEVEL` | `info` | Logging level: `error`, `warn`, `info`, `debug` |
+| `NODE_ENV` | `development` | Environment: `development` or `production` |
 
 ## Transport Modes
 
@@ -399,6 +404,61 @@ Example error response:
   }
 }
 ```
+
+## Production Features
+
+### Structured Logging
+
+The server uses Winston for structured logging with different output formats for development and production:
+
+**Development Mode**: Colorized, human-readable logs
+```bash
+LOG_LEVEL=debug NODE_ENV=development npm run dev
+```
+
+**Production Mode**: JSON-formatted logs for log aggregation
+```bash
+LOG_LEVEL=info NODE_ENV=production npm start
+```
+
+**Log Levels**:
+- `error`: Only errors
+- `warn`: Warnings and errors
+- `info`: General information (default)
+- `debug`: Detailed debugging information
+
+All requests are logged with:
+- Request ID (UUID)
+- Method name
+- Tool name (for `tools/call`)
+- Duration (milliseconds)
+- Error details (if applicable)
+
+### Rate Limiting
+
+Automatic retry with exponential backoff for transient failures:
+
+**Retriable Errors**:
+- 429 (Rate Limit): Respects `Retry-After` header if provided
+- 5xx (Server Errors): Retries with exponential backoff
+- Network errors: ECONNRESET, ENOTFOUND, ECONNREFUSED, timeouts
+
+**Configuration**:
+- Max retries: 3
+- Base delay: 1000ms
+- Max delay: 30000ms
+- Jitter: 0-25% of delay (prevents thundering herd)
+
+**Backoff Formula**: `delay = min(baseDelay * 2^attempt + jitter, maxDelay)`
+
+Example retry sequence:
+1. Initial failure
+2. Retry after ~1000ms (1s + jitter)
+3. Retry after ~2000ms (2s + jitter)
+4. Retry after ~4000ms (4s + jitter)
+5. Final failure
+
+All API requests are automatically wrapped with rate limiting - no configuration needed!
 
 ## Development
 

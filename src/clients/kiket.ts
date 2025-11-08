@@ -23,6 +23,7 @@ import {
   NetworkError,
   KiketError
 } from '../errors/index.js';
+import { rateLimiter } from '../utils/rate-limiter.js';
 import { z } from 'zod';
 
 const IssueListResponseSchema = z.object({
@@ -73,44 +74,65 @@ export class KiketClient {
     );
   }
 
+  /**
+   * Helper to execute requests with rate limiting
+   */
+  private async withRateLimit<T>(fn: () => Promise<T>, context: string): Promise<T> {
+    return rateLimiter.executeWithBackoff(fn, context);
+  }
+
   async listIssues(filters: IssueListFilters = {}): Promise<Issue[]> {
-    const response = await this.client.get('/api/v1/ext/issues', { params: filters });
-    return IssueListResponseSchema.parse(response.data).issues;
+    return this.withRateLimit(async () => {
+      const response = await this.client.get('/api/v1/ext/issues', { params: filters });
+      return IssueListResponseSchema.parse(response.data).issues;
+    }, 'List issues');
   }
 
   async getIssue(idOrKey: string | number): Promise<Issue> {
-    const response = await this.client.get(`/api/v1/ext/issues/${idOrKey}`);
-    return IssueSchema.parse(response.data.issue ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.get(`/api/v1/ext/issues/${idOrKey}`);
+      return IssueSchema.parse(response.data.issue ?? response.data);
+    }, 'Get issue');
   }
 
   async createIssue(payload: IssueInput): Promise<Issue> {
-    const response = await this.client.post('/api/v1/ext/issues', { issue: payload });
-    return IssueSchema.parse(response.data.issue ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.post('/api/v1/ext/issues', { issue: payload });
+      return IssueSchema.parse(response.data.issue ?? response.data);
+    }, 'Create issue');
   }
 
   async updateIssue(idOrKey: string | number, payload: IssueUpdate): Promise<Issue> {
-    const response = await this.client.patch(`/api/v1/ext/issues/${idOrKey}`, { issue: payload });
-    return IssueSchema.parse(response.data.issue ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.patch(`/api/v1/ext/issues/${idOrKey}`, { issue: payload });
+      return IssueSchema.parse(response.data.issue ?? response.data);
+    }, 'Update issue');
   }
 
   async transitionIssue(idOrKey: string | number, transition: string): Promise<Issue> {
-    const response = await this.client.post(`/api/v1/ext/issues/${idOrKey}/transitions`, {
-      transition
-    });
-    return IssueSchema.parse(response.data.issue ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.post(`/api/v1/ext/issues/${idOrKey}/transitions`, {
+        transition
+      });
+      return IssueSchema.parse(response.data.issue ?? response.data);
+    }, 'Transition issue');
   }
 
   // Comments
   async listComments(issueIdOrKey: string | number): Promise<Comment[]> {
-    const response = await this.client.get(`/api/v1/ext/issues/${issueIdOrKey}/comments`);
-    return z.array(CommentSchema).parse(response.data.comments ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.get(`/api/v1/ext/issues/${issueIdOrKey}/comments`);
+      return z.array(CommentSchema).parse(response.data.comments ?? response.data);
+    }, 'List comments');
   }
 
   async createComment(issueIdOrKey: string | number, payload: CommentInput): Promise<Comment> {
-    const response = await this.client.post(`/api/v1/ext/issues/${issueIdOrKey}/comments`, {
-      comment: payload
-    });
-    return CommentSchema.parse(response.data.comment ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.post(`/api/v1/ext/issues/${issueIdOrKey}/comments`, {
+        comment: payload
+      });
+      return CommentSchema.parse(response.data.comment ?? response.data);
+    }, 'Create comment');
   }
 
   async updateComment(
@@ -118,55 +140,75 @@ export class KiketClient {
     commentId: number,
     payload: CommentInput
   ): Promise<Comment> {
-    const response = await this.client.patch(
-      `/api/v1/ext/issues/${issueIdOrKey}/comments/${commentId}`,
-      { comment: payload }
-    );
-    return CommentSchema.parse(response.data.comment ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.patch(
+        `/api/v1/ext/issues/${issueIdOrKey}/comments/${commentId}`,
+        { comment: payload }
+      );
+      return CommentSchema.parse(response.data.comment ?? response.data);
+    }, 'Update comment');
   }
 
   async deleteComment(issueIdOrKey: string | number, commentId: number): Promise<void> {
-    await this.client.delete(`/api/v1/ext/issues/${issueIdOrKey}/comments/${commentId}`);
+    return this.withRateLimit(async () => {
+      await this.client.delete(`/api/v1/ext/issues/${issueIdOrKey}/comments/${commentId}`);
+    }, 'Delete comment');
   }
 
   // Projects
   async listProjects(filters: ProjectListFilters = {}): Promise<Project[]> {
-    const response = await this.client.get('/api/v1/projects', { params: filters });
-    return z.array(ProjectSchema).parse(response.data.projects ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.get('/api/v1/projects', { params: filters });
+      return z.array(ProjectSchema).parse(response.data.projects ?? response.data);
+    }, 'List projects');
   }
 
   async getProject(id: number): Promise<Project> {
-    const response = await this.client.get(`/api/v1/projects/${id}`);
-    return ProjectSchema.parse(response.data.project ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.get(`/api/v1/projects/${id}`);
+      return ProjectSchema.parse(response.data.project ?? response.data);
+    }, 'Get project');
   }
 
   async createProject(payload: ProjectInput): Promise<Project> {
-    const response = await this.client.post('/api/v1/projects', { project: payload });
-    return ProjectSchema.parse(response.data.project ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.post('/api/v1/projects', { project: payload });
+      return ProjectSchema.parse(response.data.project ?? response.data);
+    }, 'Create project');
   }
 
   async updateProject(id: number, payload: ProjectUpdate): Promise<Project> {
-    const response = await this.client.patch(`/api/v1/projects/${id}`, { project: payload });
-    return ProjectSchema.parse(response.data.project ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.patch(`/api/v1/projects/${id}`, { project: payload });
+      return ProjectSchema.parse(response.data.project ?? response.data);
+    }, 'Update project');
   }
 
   async deleteProject(id: number): Promise<void> {
-    await this.client.delete(`/api/v1/projects/${id}`);
+    return this.withRateLimit(async () => {
+      await this.client.delete(`/api/v1/projects/${id}`);
+    }, 'Delete project');
   }
 
   // Users
   async listUsers(filters: UserListFilters = {}): Promise<User[]> {
-    const response = await this.client.get('/api/v1/ext/project/members', { params: filters });
-    return z.array(UserSchema).parse(response.data.members ?? response.data.users ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.get('/api/v1/ext/project/members', { params: filters });
+      return z.array(UserSchema).parse(response.data.members ?? response.data.users ?? response.data);
+    }, 'List users');
   }
 
   async getUser(id: number): Promise<User> {
-    const response = await this.client.get(`/api/v1/users/${id}`);
-    return UserSchema.parse(response.data.user ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.get(`/api/v1/users/${id}`);
+      return UserSchema.parse(response.data.user ?? response.data);
+    }, 'Get user');
   }
 
   async getCurrentUser(): Promise<User> {
-    const response = await this.client.get('/api/v1/me');
-    return UserSchema.parse(response.data.user ?? response.data);
+    return this.withRateLimit(async () => {
+      const response = await this.client.get('/api/v1/me');
+      return UserSchema.parse(response.data.user ?? response.data);
+    }, 'Get current user');
   }
 }

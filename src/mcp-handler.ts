@@ -6,6 +6,8 @@ import { IssueTools } from './tools/issues.js';
 import { ProjectTools } from './tools/projects.js';
 import { UserTools } from './tools/users.js';
 import { errorToJsonRpcCode, JSON_RPC_ERRORS } from './errors/index.js';
+import { log } from './utils/logger.js';
+import { randomUUID } from 'crypto';
 
 export class MCPHandler {
   constructor(
@@ -16,10 +18,18 @@ export class MCPHandler {
 
   async handleMessage(message: any): Promise<any> {
     const { id, method, params } = message;
+    const requestId = randomUUID();
+    const startTime = Date.now();
 
     if (!method) {
       return;
     }
+
+    log.request('Incoming MCP request', {
+      requestId,
+      method,
+      params: method === 'tools/call' ? { name: params?.name } : undefined
+    });
 
     try {
       switch (method) {
@@ -103,9 +113,11 @@ export class MCPHandler {
         }
 
         case 'ping':
+          log.debug('Ping request', { requestId });
           return { jsonrpc: '2.0', id, result: 'pong' };
 
         default:
+          log.warn('Unknown method', { requestId, method });
           return {
             jsonrpc: '2.0',
             id,
@@ -116,7 +128,14 @@ export class MCPHandler {
           };
       }
     } catch (error) {
-      console.error('Handler error:', error);
+      const duration = Date.now() - startTime;
+      log.requestError('Handler error', {
+        requestId,
+        method,
+        duration,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+
       return {
         jsonrpc: '2.0',
         id,
@@ -125,6 +144,14 @@ export class MCPHandler {
           message: error instanceof Error ? error.message : 'Internal error'
         }
       };
+    } finally {
+      const duration = Date.now() - startTime;
+      log.request('Request completed', {
+        requestId,
+        method,
+        duration,
+        toolName: method === 'tools/call' ? params?.name : undefined
+      });
     }
   }
 }

@@ -7,6 +7,7 @@ import { MCPHandler } from './mcp-handler.js';
 import { StdioTransport } from './transports/stdio.js';
 import { WebSocketTransport } from './transports/websocket.js';
 import { HealthServer } from './health.js';
+import { log } from './utils/logger.js';
 
 const env = loadEnv();
 const port = Number(process.env.MCP_PORT || 3001);
@@ -33,27 +34,43 @@ let healthServer: HealthServer | undefined;
 if (transportType !== 'stdio') {
   healthServer = new HealthServer(healthPort, client);
   healthServer.start();
+  log.info('Health check server started', { port: healthPort });
 }
 
 // Start MCP server
+log.info('Starting Kiket MCP server', {
+  transport: transportType,
+  port: transportType === 'websocket' ? port : undefined,
+  apiUrl: env.apiUrl,
+  projectKey: env.projectKey
+});
+
 transport
   .start((message) => handler.handleMessage(message))
+  .then(() => {
+    log.info('MCP server ready', {
+      transport: transportType,
+      port: transportType === 'websocket' ? port : undefined
+    });
+  })
   .catch((err) => {
-    console.error('Failed to start MCP server:', err);
+    log.error('Failed to start MCP server', { error: err.message, stack: err.stack });
     process.exit(1);
   });
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\nShutting down MCP server...');
+  log.info('Received SIGINT, shutting down gracefully...');
   await transport.stop();
   if (healthServer) await healthServer.stop();
+  log.info('Server stopped successfully');
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\nShutting down MCP server...');
+  log.info('Received SIGTERM, shutting down gracefully...');
   await transport.stop();
   if (healthServer) await healthServer.stop();
+  log.info('Server stopped successfully');
   process.exit(0);
 });
