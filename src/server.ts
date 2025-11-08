@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { loadEnv } from './utils/env.js';
 import { KiketClient } from './clients/kiket.js';
 import { IssueTools } from './tools/issues.js';

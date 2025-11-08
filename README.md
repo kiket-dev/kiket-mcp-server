@@ -35,13 +35,44 @@ Model Context Protocol (MCP) server that provides AI tools to interact with Kike
 - **Type-Safe**: Full TypeScript with Zod validation
 - **Comprehensive Tests**: 55+ test cases with Vitest
 
-## Quick Start
+## Installation
+
+### NPM Global Install
 
 ```bash
+npm install -g @kiket-dev/mcp-server
+```
+
+### NPX (No Installation Required)
+
+```bash
+npx @kiket-dev/mcp-server
+```
+
+### From Source
+
+```bash
+git clone https://github.com/kiket-dev/kiket.git
+cd kiket/mcp-server
 npm install
 cp .env.example .env.local
 # Edit .env.local with your KIKET_API_URL and KIKET_API_KEY
 npm run dev
+```
+
+## Quick Start
+
+After installation, configure your environment variables and run the server:
+
+```bash
+# Set environment variables
+export KIKET_API_URL="https://kiket.dev"
+export KIKET_API_KEY="your-api-key-here"
+
+# Run the server
+kiket-mcp-server
+# or
+npx @kiket-dev/mcp-server
 ```
 
 The server starts on:
@@ -242,7 +273,47 @@ MCP_TRANSPORT=stdio npm run dev
 
 ### Claude Desktop
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+**Using NPX (Recommended - No Installation Required):**
+
+```json
+{
+  "mcpServers": {
+    "kiket": {
+      "command": "npx",
+      "args": [
+        "@kiket-dev/mcp-server"
+      ],
+      "env": {
+        "KIKET_API_URL": "https://kiket.dev",
+        "KIKET_API_KEY": "your-api-key-here",
+        "KIKET_PROJECT_KEY": "BACKEND"
+      }
+    }
+  }
+}
+```
+
+**Using Global Install:**
+
+```json
+{
+  "mcpServers": {
+    "kiket": {
+      "command": "kiket-mcp-server",
+      "args": [],
+      "env": {
+        "KIKET_API_URL": "https://kiket.dev",
+        "KIKET_API_KEY": "your-api-key-here",
+        "KIKET_PROJECT_KEY": "BACKEND"
+      }
+    }
+  }
+}
+```
+
+**Using Local Development:**
 
 ```json
 {
@@ -255,8 +326,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
         "/path/to/kiket/mcp-server/src/server.ts"
       ],
       "env": {
-        "KIKET_API_URL": "https://www.kiket.dev",
-        "KIKET_API_KEY": "sk-...",
+        "KIKET_API_URL": "https://kiket.dev",
+        "KIKET_API_KEY": "your-api-key-here",
         "KIKET_PROJECT_KEY": "BACKEND"
       }
     }
@@ -272,16 +343,14 @@ Edit `~/.config/openai/mcp.json`:
 {
   "servers": {
     "kiket": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "--loader",
-        "ts-node/esm",
-        "/path/to/kiket/mcp-server/src/server.ts"
+        "@kiket-dev/mcp-server"
       ],
       "env": {
         "MCP_TRANSPORT": "stdio",
-        "KIKET_API_URL": "https://www.kiket.dev",
-        "KIKET_API_KEY": "sk-..."
+        "KIKET_API_URL": "https://kiket.dev",
+        "KIKET_API_KEY": "your-api-key-here"
       }
     }
   }
@@ -296,16 +365,14 @@ Edit `~/.config/github-copilot/mcp.json`:
 {
   "servers": {
     "kiket": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "--loader",
-        "ts-node/esm",
-        "/path/to/kiket/mcp-server/src/server.ts"
+        "@kiket-dev/mcp-server"
       ],
       "env": {
         "MCP_TRANSPORT": "stdio",
-        "KIKET_API_URL": "https://www.kiket.dev",
-        "KIKET_API_KEY": "ghp_..."
+        "KIKET_API_URL": "https://kiket.dev",
+        "KIKET_API_KEY": "your-api-key-here"
       }
     }
   }
@@ -319,16 +386,14 @@ Edit `~/.config/aistudio/mcp_servers.json`:
 ```json
 {
   "kiket": {
-    "command": "node",
+    "command": "npx",
     "args": [
-      "--loader",
-      "ts-node/esm",
-      "/path/to/kiket/mcp-server/src/server.ts"
+      "@kiket-dev/mcp-server"
     ],
     "env": {
       "MCP_TRANSPORT": "stdio",
-      "KIKET_API_URL": "https://www.kiket.dev",
-      "KIKET_API_KEY": "sk-..."
+      "KIKET_API_URL": "https://kiket.dev",
+      "KIKET_API_KEY": "your-api-key-here"
     }
   }
 }

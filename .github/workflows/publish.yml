@@ -1,0 +1,99 @@
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - 'mcp-v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@kiket-dev'
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/mcp-v}" >> $GITHUB_OUTPUT
+
+      - name: Verify package.json version matches tag
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if [ "$PACKAGE_VERSION" != "${{ steps.version.outputs.VERSION }}" ]; then
+            echo "Version mismatch: package.json has $PACKAGE_VERSION but tag is ${{ steps.version.outputs.VERSION }}"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: mcp-v${{ steps.version.outputs.VERSION }}
+          name: MCP Server v${{ steps.version.outputs.VERSION }}
+          body: |
+            Release of @kiket-dev/mcp-server version ${{ steps.version.outputs.VERSION }}
+
+            ## Installation
+
+            ### NPM
+            ```bash
+            npm install -g @kiket-dev/mcp-server@${{ steps.version.outputs.VERSION }}
+            ```
+
+            ### NPX (no installation)
+            ```bash
+            npx @kiket-dev/mcp-server@${{ steps.version.outputs.VERSION }}
+            ```
+
+            ### Claude Desktop Configuration
+            ```json
+            {
+              "mcpServers": {
+                "kiket": {
+                  "command": "npx",
+                  "args": [
+                    "@kiket-dev/mcp-server@${{ steps.version.outputs.VERSION }}"
+                  ],
+                  "env": {
+                    "KIKET_API_URL": "https://kiket.dev",
+                    "KIKET_API_KEY": "your-api-key-here"
+                  }
+                }
+              }
+            }
+            ```
+
+            ## Changes
+            See [README.md](https://github.com/kiket-dev/kiket/blob/main/mcp-server/README.md) for details.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
