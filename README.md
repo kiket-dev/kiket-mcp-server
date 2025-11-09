@@ -283,7 +283,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
     "kiket": {
       "command": "npx",
       "args": [
-        "@kiket-dev/mcp-server"
+        "@kiket-dev/kiket-mcp-server"
       ],
       "env": {
         "KIKET_API_URL": "https://kiket.dev",

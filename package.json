@@ -1,5 +1,5 @@
 {
-  "name": "@kiket-dev/mcp-server",
+  "name": "@kiket-dev/kiket-mcp-server",
   "version": "0.1.0",
   "description": "Model Context Protocol server that provides Kiket issue management tools.",
   "type": "module",
@@ -34,7 +34,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/kiket-dev/kiket-mcp-server.git",
-    "directory": "mcp-server"
+    "directory": "kiket-mcp-server"
   },
   "bugs": {
     "url": "https://github.com/kiket-dev/kiket-mcp-server/issues"

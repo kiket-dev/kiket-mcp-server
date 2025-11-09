@@ -3,7 +3,7 @@ name: Publish Package
 on:
   push:
     tags:
-      - 'mcp-v*'
+      - 'kiket-mcp-server-v*'
 
 permissions:
   contents: write
@@ -59,7 +59,7 @@ jobs:
           tag_name: mcp-v${{ steps.version.outputs.VERSION }}
           name: MCP Server v${{ steps.version.outputs.VERSION }}
           body: |
-            Release of @kiket-dev/mcp-server version ${{ steps.version.outputs.VERSION }}
+            Release of @kiket-dev/kiket-mcp-server version ${{ steps.version.outputs.VERSION }}
 
             ## Installation
 

@@ -43,7 +43,7 @@ jobs:
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: mcp-server-dist
+          name: kiket-mcp-server-dist
           path: dist
           if-no-files-found: error
 
