@@ -15,7 +15,6 @@ export class StdioTransport implements Transport {
 
     this.rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout,
       terminal: false
     });
 
