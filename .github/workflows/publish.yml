@@ -65,12 +65,12 @@ jobs:
 
             ### NPM
             ```bash
-            npm install -g @kiket-dev/mcp-server@${{ steps.version.outputs.VERSION }}
+            npm install -g @kiket-dev/kiket-mcp-server@${{ steps.version.outputs.VERSION }}
             ```
 
             ### NPX (no installation)
             ```bash
-            npx @kiket-dev/mcp-server@${{ steps.version.outputs.VERSION }}
+            npx @kiket-dev/kiket-mcp-server@${{ steps.version.outputs.VERSION }}
             ```
 
             ### Claude Desktop Configuration
@@ -80,7 +80,7 @@ jobs:
                 "kiket": {
                   "command": "npx",
                   "args": [
-                    "@kiket-dev/mcp-server@${{ steps.version.outputs.VERSION }}"
+                    "@kiket-dev/kiket-mcp-server@${{ steps.version.outputs.VERSION }}"
                   ],
                   "env": {
                     "KIKET_API_URL": "https://kiket.dev",
@@ -92,7 +92,7 @@ jobs:
             ```
 
             ## Changes
-            See [README.md](https://github.com/kiket-dev/kiket/blob/main/mcp-server/README.md) for details.
+            See [README.md](https://github.com/kiket-dev/kiket-mcp-server/blob/main/README.md) for details.
           draft: false
           prerelease: false
         env:

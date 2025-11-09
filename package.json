@@ -33,13 +33,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/kiket-dev/kiket.git",
+    "url": "https://github.com/kiket-dev/kiket-mcp-server.git",
     "directory": "mcp-server"
   },
   "bugs": {
-    "url": "https://github.com/kiket-dev/kiket/issues"
+    "url": "https://github.com/kiket-dev/kiket-mcp-server/issues"
   },
-  "homepage": "https://github.com/kiket-dev/kiket/tree/main/mcp-server#readme",
+  "homepage": "https://github.com/kiket-dev/kiket-mcp-server/blob/main/README.md",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
     "access": "public"
