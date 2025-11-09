@@ -25,7 +25,9 @@ export const logger = winston.createLogger({
   format: nodeEnv === 'production' ? prodFormat : devFormat,
   transports: [
     new winston.transports.Console({
-      stderrLevels: ['error']
+      // Send ALL logs to stderr to avoid interfering with stdio MCP protocol
+      // (stdout must only contain JSON-RPC messages)
+      stderrLevels: ['error', 'warn', 'info', 'debug']
     })
   ],
   // Don't exit on uncaught errors
