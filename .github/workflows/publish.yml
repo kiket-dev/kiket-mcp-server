@@ -26,7 +26,7 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/mcp-v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/kiket-mcp-server-v}" >> $GITHUB_OUTPUT
 
       - name: Verify package.json version matches tag
         run: |
@@ -56,7 +56,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: mcp-v${{ steps.version.outputs.VERSION }}
+          tag_name: kiket-mcp-server-v${{ steps.version.outputs.VERSION }}
           name: MCP Server v${{ steps.version.outputs.VERSION }}
           body: |
             Release of @kiket-dev/kiket-mcp-server version ${{ steps.version.outputs.VERSION }}
