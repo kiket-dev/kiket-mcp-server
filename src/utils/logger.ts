@@ -2,6 +2,7 @@ import winston from 'winston';
 
 const logLevel = process.env.LOG_LEVEL || 'info';
 const nodeEnv = process.env.NODE_ENV || 'development';
+const mcpTransport = process.env.MCP_TRANSPORT || 'websocket';
 
 // Custom format for development (colorized, pretty)
 const devFormat = winston.format.combine(
@@ -20,18 +21,23 @@ const prodFormat = winston.format.combine(
   winston.format.json()
 );
 
+// Disable logging entirely in stdio mode to avoid any interference with MCP protocol
+const transports = mcpTransport === 'stdio' ? [] : [
+  new winston.transports.Console({
+    // Send ALL logs to stderr to avoid interfering with stdio MCP protocol
+    // (stdout must only contain JSON-RPC messages)
+    stderrLevels: ['error', 'warn', 'info', 'debug']
+  })
+];
+
 export const logger = winston.createLogger({
   level: logLevel,
   format: nodeEnv === 'production' ? prodFormat : devFormat,
-  transports: [
-    new winston.transports.Console({
-      // Send ALL logs to stderr to avoid interfering with stdio MCP protocol
-      // (stdout must only contain JSON-RPC messages)
-      stderrLevels: ['error', 'warn', 'info', 'debug']
-    })
-  ],
+  transports,
   // Don't exit on uncaught errors
-  exitOnError: false
+  exitOnError: false,
+  // Silence logger completely in stdio mode
+  silent: mcpTransport === 'stdio'
 });
 
 // Request context logger
