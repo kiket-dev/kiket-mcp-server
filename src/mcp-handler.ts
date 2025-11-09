@@ -38,7 +38,7 @@ export class MCPHandler {
             jsonrpc: '2.0',
             id,
             result: {
-              protocolVersion: '0.1',
+              protocolVersion: '2024-11-05',
               serverInfo: {
                 name: 'kiket-mcp-server',
                 version: '0.1.0'
@@ -51,6 +51,10 @@ export class MCPHandler {
               }
             }
           };
+
+        case 'notifications/initialized':
+          // Notification - no response needed
+          return undefined;
 
         case 'tools/list':
           return {
