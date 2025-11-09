@@ -82,35 +82,39 @@ export class KiketClient {
 
   async listIssues(filters: IssueListFilters = {}): Promise<Issue[]> {
     return this.withRateLimit(async () => {
-      const response = await this.client.get('/api/v1/ext/issues', { params: filters });
+      const response = await this.client.get('/api/v1/issues', { params: filters });
       return IssueListResponseSchema.parse(response.data).issues;
     }, 'List issues');
   }
 
   async getIssue(idOrKey: string | number): Promise<Issue> {
     return this.withRateLimit(async () => {
-      const response = await this.client.get(`/api/v1/ext/issues/${idOrKey}`);
+      const response = await this.client.get(`/api/v1/issues/${idOrKey}`);
       return IssueSchema.parse(response.data.issue ?? response.data);
     }, 'Get issue');
   }
 
   async createIssue(payload: IssueInput): Promise<Issue> {
     return this.withRateLimit(async () => {
-      const response = await this.client.post('/api/v1/ext/issues', { issue: payload });
+      const projectKey = payload.project_key;
+      if (!projectKey) {
+        throw new Error('project_key is required to create an issue');
+      }
+      const response = await this.client.post(`/api/v1/projects/${projectKey}/issues`, { issue: payload });
       return IssueSchema.parse(response.data.issue ?? response.data);
     }, 'Create issue');
   }
 
   async updateIssue(idOrKey: string | number, payload: IssueUpdate): Promise<Issue> {
     return this.withRateLimit(async () => {
-      const response = await this.client.patch(`/api/v1/ext/issues/${idOrKey}`, { issue: payload });
+      const response = await this.client.patch(`/api/v1/issues/${idOrKey}`, { issue: payload });
       return IssueSchema.parse(response.data.issue ?? response.data);
     }, 'Update issue');
   }
 
   async transitionIssue(idOrKey: string | number, transition: string): Promise<Issue> {
     return this.withRateLimit(async () => {
-      const response = await this.client.post(`/api/v1/ext/issues/${idOrKey}/transitions`, {
+      const response = await this.client.post(`/api/v1/issues/${idOrKey}/transitions`, {
         transition
       });
       return IssueSchema.parse(response.data.issue ?? response.data);
@@ -120,14 +124,14 @@ export class KiketClient {
   // Comments
   async listComments(issueIdOrKey: string | number): Promise<Comment[]> {
     return this.withRateLimit(async () => {
-      const response = await this.client.get(`/api/v1/ext/issues/${issueIdOrKey}/comments`);
+      const response = await this.client.get(`/api/v1/issues/${issueIdOrKey}/comments`);
       return z.array(CommentSchema).parse(response.data.comments ?? response.data);
     }, 'List comments');
   }
 
   async createComment(issueIdOrKey: string | number, payload: CommentInput): Promise<Comment> {
     return this.withRateLimit(async () => {
-      const response = await this.client.post(`/api/v1/ext/issues/${issueIdOrKey}/comments`, {
+      const response = await this.client.post(`/api/v1/issues/${issueIdOrKey}/comments`, {
         comment: payload
       });
       return CommentSchema.parse(response.data.comment ?? response.data);
@@ -141,7 +145,7 @@ export class KiketClient {
   ): Promise<Comment> {
     return this.withRateLimit(async () => {
       const response = await this.client.patch(
-        `/api/v1/ext/issues/${issueIdOrKey}/comments/${commentId}`,
+        `/api/v1/issues/${issueIdOrKey}/comments/${commentId}`,
         { comment: payload }
       );
       return CommentSchema.parse(response.data.comment ?? response.data);
@@ -150,7 +154,7 @@ export class KiketClient {
 
   async deleteComment(issueIdOrKey: string | number, commentId: number): Promise<void> {
     return this.withRateLimit(async () => {
-      await this.client.delete(`/api/v1/ext/issues/${issueIdOrKey}/comments/${commentId}`);
+      await this.client.delete(`/api/v1/issues/${issueIdOrKey}/comments/${commentId}`);
     }, 'Delete comment');
   }
 
@@ -192,7 +196,7 @@ export class KiketClient {
   // Users
   async listUsers(filters: UserListFilters = {}): Promise<User[]> {
     return this.withRateLimit(async () => {
-      const response = await this.client.get('/api/v1/ext/project/members', { params: filters });
+      const response = await this.client.get('/api/v1/users', { params: filters });
       return z.array(UserSchema).parse(response.data.members ?? response.data.users ?? response.data);
     }, 'List users');
   }
