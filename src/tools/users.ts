@@ -3,10 +3,17 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { UserSchema, UserListFiltersSchema } from '../types/kiket.js';
 import { KiketClient } from '../clients/kiket.js';
 
+// Helper to produce flat JSON schemas without $ref
+function toFlatSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+  const result = zodToJsonSchema(schema, { $refStrategy: 'none' });
+  const { $schema, ...rest } = result as Record<string, unknown>;
+  return rest;
+}
+
 export type ToolDefinition = {
   name: string;
   description: string;
-  inputSchema: ReturnType<typeof zodToJsonSchema>;
+  inputSchema: Record<string, unknown>;
 };
 
 const identifierSchema = z.object({
@@ -21,17 +28,17 @@ export class UserTools {
       {
         name: 'listUsers',
         description: 'List all users/members in the current project or organization.',
-        inputSchema: zodToJsonSchema(UserListFiltersSchema, 'listUsersInput')
+        inputSchema: toFlatSchema(UserListFiltersSchema)
       },
       {
         name: 'getUser',
         description: 'Fetch a single user by ID.',
-        inputSchema: zodToJsonSchema(identifierSchema, 'getUserInput')
+        inputSchema: toFlatSchema(identifierSchema)
       },
       {
         name: 'getCurrentUser',
         description: 'Get the currently authenticated user profile.',
-        inputSchema: zodToJsonSchema(z.object({}), 'getCurrentUserInput')
+        inputSchema: toFlatSchema(z.object({}))
       }
     ];
   }

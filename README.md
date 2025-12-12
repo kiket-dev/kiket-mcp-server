@@ -52,8 +52,8 @@ npx @kiket-dev/mcp-server
 ### From Source
 
 ```bash
-git clone https://github.com/kiket-dev/kiket.git
-cd kiket/mcp-server
+git clone https://github.com/kiket-dev/kiket-mcp-server.git
+cd kiket-mcp-server
 npm install
 cp .env.example .env.local
 # Edit .env.local with your KIKET_API_URL and KIKET_API_KEY
@@ -655,5 +655,5 @@ MIT
 ## Support
 
 - Documentation: https://docs.kiket.dev/extensions/mcp-server
-- Issues: https://github.com/kiket-dev/kiket/issues
+- Issues: https://github.com/kiket-dev/kiket-mcp-server/issues
 - Slack: https://kiket.dev/slack

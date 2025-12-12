@@ -2,35 +2,79 @@ import { z } from 'zod';
 
 export const IssueSchema = z.object({
   id: z.number(),
-  key: z.string(),
+  key: z.string().nullish(),
   title: z.string(),
-  description: z.string().nullable(),
+  description: z.string().nullish(),
   status: z.string(),
-  workflow_state: z.string().optional(),
+  workflow_state: z.string().nullish(),
   assignee: z
     .object({
       id: z.number(),
-      name: z.string().nullable(),
-      email: z.string().nullable()
+      name: z.string().nullish(),
+      email: z.string().nullish()
     })
-    .nullable(),
-  priority: z.string().nullable(),
-  labels: z.array(z.string()).optional().default([]),
-  issue_type: z.string().optional(),
+    .nullish(),
+  priority: z.string().nullish(),
+  labels: z.array(z.string()).nullish().default([]),
+  issue_type: z.string().nullish(),
+  /** Parent issue ID for hierarchy (Epic -> UserStory -> Task) */
+  parent_id: z.number().nullish(),
+  /** Parent issue key for display purposes */
+  parent_key: z.string().nullish(),
   created_at: z.string(),
   updated_at: z.string()
 });
 
 export type Issue = z.infer<typeof IssueSchema>;
 
+/**
+ * Valid priority values for issues.
+ * Must be lowercase.
+ */
+export const ISSUE_PRIORITIES = ['low', 'medium', 'high', 'critical'] as const;
+export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
+
+/**
+ * Common issue types (organization-specific types may vary).
+ * Typically PascalCase: Epic, UserStory, Task, Bug
+ */
+export const DEFAULT_ISSUE_TYPES = ['Epic', 'UserStory', 'Task', 'Bug'] as const;
+export type DefaultIssueType = (typeof DEFAULT_ISSUE_TYPES)[number];
+
+/**
+ * Default values applied when creating issues.
+ */
+export const ISSUE_DEFAULTS = {
+  status: 'backlog',
+  issue_type: 'Task'
+} as const;
+
 export const IssueInputSchema = z.object({
   project_key: z.string().optional(),
+  project_id: z.number().optional(),
   title: z.string(),
   description: z.string().optional(),
+  /** Status of the issue. Defaults to 'backlog' if not provided. */
+  status: z.string().optional(),
+  /** Issue type (e.g., Epic, UserStory, Task, Bug). Defaults to 'Task' if not provided. */
   issue_type: z.string().optional(),
-  priority: z.string().optional(),
+  /** Priority: low, medium, high, or critical (lowercase). */
+  priority: z.enum(ISSUE_PRIORITIES).optional(),
   assignee_id: z.number().optional(),
-  labels: z.array(z.string()).optional()
+  labels: z.array(z.string()).optional(),
+  /**
+   * Parent issue ID for hierarchy. Use for linking:
+   * - UserStory to Epic
+   * - Task/Bug to UserStory or Epic
+   * Parent must have allow_children=true in its issue type definition.
+   */
+  parent_id: z.number().optional(),
+  /**
+   * Custom fields as key-value pairs.
+   * Field keys and valid values are project/org specific.
+   * Use the project's field definitions to determine valid keys and values.
+   */
+  custom_fields: z.record(z.string(), z.unknown()).optional()
 });
 
 export type IssueInput = z.infer<typeof IssueInputSchema>;
@@ -75,18 +119,18 @@ export type CommentInput = z.infer<typeof CommentInputSchema>;
 export const ProjectSchema = z.object({
   id: z.number(),
   name: z.string(),
-  description: z.string().nullable(),
+  description: z.string().nullish(),
   organization_id: z.number(),
-  project_key: z.string(),
-  status: z.string().nullable(),
-  visibility: z.string().nullable(),
-  github_repo_url: z.string().nullable(),
-  start_date: z.string().nullable(),
-  end_date: z.string().nullable(),
-  workflow_sync_enabled: z.boolean().nullable(),
-  workflow_auto_boards: z.boolean().nullable(),
-  settings: z.record(z.any()).nullable(),
-  lead_id: z.number().nullable(),
+  project_key: z.string().nullish(),
+  status: z.string().nullish(),
+  visibility: z.string().nullish(),
+  github_repo_url: z.string().nullish(),
+  start_date: z.string().nullish(),
+  end_date: z.string().nullish(),
+  workflow_sync_enabled: z.boolean().nullish(),
+  workflow_auto_boards: z.boolean().nullish(),
+  settings: z.record(z.any()).nullish(),
+  lead_id: z.number().nullish(),
   created_at: z.string(),
   updated_at: z.string()
 });
@@ -116,28 +160,71 @@ export const ProjectListFiltersSchema = z.object({
 
 export type ProjectListFilters = z.infer<typeof ProjectListFiltersSchema>;
 
+// Issue Schema (types, custom fields, statuses)
+export const IssueTypeSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  icon: z.string().optional(),
+  color: z.string().optional(),
+  allow_children: z.boolean().optional(),
+  description: z.string().nullish()
+});
+
+export type IssueType = z.infer<typeof IssueTypeSchema>;
+
+export const CustomFieldSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  type: z.enum(['string', 'text', 'number', 'boolean', 'enum']),
+  required: z.boolean().optional(),
+  issue_type: z.string().nullish(),
+  options: z.array(z.string()).nullish(),
+  default_value: z.unknown().nullish(),
+  helper_text: z.string().nullish()
+});
+
+export type CustomField = z.infer<typeof CustomFieldSchema>;
+
+export const StatusSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  category: z.string().optional()
+});
+
+export type Status = z.infer<typeof StatusSchema>;
+
+export const IssueSchemaResponseSchema = z.object({
+  issue_types: z.array(IssueTypeSchema),
+  custom_fields: z.array(CustomFieldSchema),
+  priorities: z.array(z.string()),
+  statuses: z.array(StatusSchema)
+});
+
+export type IssueSchemaResponse = z.infer<typeof IssueSchemaResponseSchema>;
+
 // Users
 export const UserSchema = z.object({
   id: z.number(),
-  name: z.string(),
+  name: z.string().nullish(),
   email: z.string(),
-  role: z.string().nullable(),
-  organization_id: z.number().nullable(),
-  expertise_tags: z.array(z.string()).nullable(),
-  historical_velocity: z.number().nullable(),
-  avatar_url: z.string().nullable(),
-  capacity: z.number().nullable(),
-  super_admin: z.boolean().nullable(),
-  deactivated: z.boolean().nullable(),
-  created_at: z.string(),
-  updated_at: z.string()
+  role: z.string().nullish(),
+  organization_id: z.number().nullish(),
+  expertise_tags: z.array(z.string()).nullish(),
+  historical_velocity: z.number().nullish(),
+  avatar_url: z.string().nullish(),
+  capacity: z.number().nullish(),
+  super_admin: z.boolean().nullish(),
+  deactivated: z.boolean().nullish(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional()
 });
 
 export type User = z.infer<typeof UserSchema>;
 
 export const UserListFiltersSchema = z.object({
   page: z.number().optional(),
-  per_page: z.number().optional()
+  per_page: z.number().optional(),
+  role: z.string().optional()
 });
 
 export type UserListFilters = z.infer<typeof UserListFiltersSchema>;

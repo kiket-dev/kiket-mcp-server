@@ -8,10 +8,17 @@ import {
 } from '../types/kiket.js';
 import { KiketClient } from '../clients/kiket.js';
 
+// Helper to produce flat JSON schemas without $ref
+function toFlatSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+  const result = zodToJsonSchema(schema, { $refStrategy: 'none' });
+  const { $schema, ...rest } = result as Record<string, unknown>;
+  return rest;
+}
+
 export type ToolDefinition = {
   name: string;
   description: string;
-  inputSchema: ReturnType<typeof zodToJsonSchema>;
+  inputSchema: Record<string, unknown>;
 };
 
 const identifierSchema = z.object({
@@ -31,27 +38,27 @@ export class ProjectTools {
       {
         name: 'listProjects',
         description: 'List all projects visible to the authenticated user.',
-        inputSchema: zodToJsonSchema(ProjectListFiltersSchema, 'listProjectsInput')
+        inputSchema: toFlatSchema(ProjectListFiltersSchema)
       },
       {
         name: 'getProject',
         description: 'Fetch a single project by ID.',
-        inputSchema: zodToJsonSchema(identifierSchema, 'getProjectInput')
+        inputSchema: toFlatSchema(identifierSchema)
       },
       {
         name: 'createProject',
         description: 'Create a new project (requires organization admin permissions).',
-        inputSchema: zodToJsonSchema(ProjectInputSchema, 'createProjectInput')
+        inputSchema: toFlatSchema(ProjectInputSchema)
       },
       {
         name: 'updateProject',
         description: 'Update project settings, description, or repository links.',
-        inputSchema: zodToJsonSchema(updateProjectInputSchema, 'updateProjectInput')
+        inputSchema: toFlatSchema(updateProjectInputSchema)
       },
       {
         name: 'deleteProject',
         description: 'Archive/delete a project (requires admin permissions).',
-        inputSchema: zodToJsonSchema(deleteProjectInputSchema, 'deleteProjectInput')
+        inputSchema: toFlatSchema(deleteProjectInputSchema)
       }
     ];
   }

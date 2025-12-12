@@ -8,6 +8,14 @@ import {
 } from '../types/kiket.js';
 import { KiketClient } from '../clients/kiket.js';
 
+// Helper to produce flat JSON schemas without $ref
+function toFlatSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+  const result = zodToJsonSchema(schema, { $refStrategy: 'none' });
+  // Remove $schema key as MCP doesn't need it
+  const { $schema, ...rest } = result as Record<string, unknown>;
+  return rest;
+}
+
 const transitionInputSchema = z.object({
   id: z.union([z.string(), z.number()]),
   transition: z.string().min(1)
@@ -37,10 +45,14 @@ const commentDeleteSchema = z.object({
   comment_id: z.number()
 });
 
+const issueSchemaInputSchema = z.object({
+  project_key: z.string().optional()
+});
+
 export type ToolDefinition = {
   name: string;
   description: string;
-  inputSchema: ReturnType<typeof zodToJsonSchema>;
+  inputSchema: Record<string, unknown>;
 };
 
 const createIssueInputSchema = IssueInputSchema.extend({ project_key: z.string().optional() });
@@ -54,47 +66,60 @@ export class IssueTools {
       {
         name: 'listIssues',
         description: 'List issues filtered by status, assignee, label, or project.',
-        inputSchema: zodToJsonSchema(IssueListFiltersSchema, 'listIssuesInput')
+        inputSchema: toFlatSchema(IssueListFiltersSchema)
       },
       {
         name: 'getIssue',
         description: 'Fetch a single issue by numeric ID or issue key.',
-        inputSchema: zodToJsonSchema(identifierSchema, 'getIssueInput')
+        inputSchema: toFlatSchema(identifierSchema)
       },
       {
         name: 'createIssue',
-        description: 'Create a new issue in the selected project.',
-        inputSchema: zodToJsonSchema(createIssueInputSchema, 'createIssueInput')
+        description:
+          'Create a new issue in the selected project. ' +
+          'Defaults: status="backlog", issue_type="Task". ' +
+          'Priority values: low, medium, high, critical (lowercase). ' +
+          'Common issue types: Epic, UserStory, Task, Bug (PascalCase). ' +
+          'Use parent_id to link child issues to parent (e.g., UserStory under Epic, Task under UserStory).',
+        inputSchema: toFlatSchema(createIssueInputSchema)
       },
       {
         name: 'updateIssue',
         description: 'Update fields on an existing issue.',
-        inputSchema: zodToJsonSchema(updateIssueInputSchema, 'updateIssueInput')
+        inputSchema: toFlatSchema(updateIssueInputSchema)
       },
       {
         name: 'transitionIssue',
         description: 'Move an issue to a different workflow state using a transition key.',
-        inputSchema: zodToJsonSchema(transitionInputSchema, 'transitionIssueInput')
+        inputSchema: toFlatSchema(transitionInputSchema)
       },
       {
         name: 'listComments',
         description: 'List all comments on an issue.',
-        inputSchema: zodToJsonSchema(commentListSchema, 'listCommentsInput')
+        inputSchema: toFlatSchema(commentListSchema)
       },
       {
         name: 'createComment',
         description: 'Add a comment to an issue.',
-        inputSchema: zodToJsonSchema(commentCreateSchema, 'createCommentInput')
+        inputSchema: toFlatSchema(commentCreateSchema)
       },
       {
         name: 'updateComment',
         description: 'Update an existing comment on an issue.',
-        inputSchema: zodToJsonSchema(commentUpdateSchema, 'updateCommentInput')
+        inputSchema: toFlatSchema(commentUpdateSchema)
       },
       {
         name: 'deleteComment',
         description: 'Delete a comment from an issue.',
-        inputSchema: zodToJsonSchema(commentDeleteSchema, 'deleteCommentInput')
+        inputSchema: toFlatSchema(commentDeleteSchema)
+      },
+      {
+        name: 'getIssueSchema',
+        description:
+          'Get issue schema for the organization/project. ' +
+          'Returns available issue types, custom field definitions, priorities, and statuses. ' +
+          'Use this to discover valid values for creating/updating issues.',
+        inputSchema: toFlatSchema(issueSchemaInputSchema)
       }
     ];
   }
@@ -123,6 +148,8 @@ export class IssueTools {
         return this.updateComment(args);
       case 'deleteComment':
         return this.deleteComment(args);
+      case 'getIssueSchema':
+        return this.getIssueSchema(args);
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -189,6 +216,13 @@ export class IssueTools {
     const { issue_id, comment_id } = commentDeleteSchema.parse(args);
     await this.client.deleteComment(issue_id, comment_id);
     return { success: true };
+  }
+
+  private async getIssueSchema(args: unknown) {
+    const { project_key } = issueSchemaInputSchema.parse(args);
+    const projectIdOrKey = project_key ?? this.defaultProjectKey;
+    const schema = await this.client.getIssueSchema(projectIdOrKey);
+    return { schema };
   }
 }
 
