@@ -228,3 +228,46 @@ export const UserListFiltersSchema = z.object({
 });
 
 export type UserListFilters = z.infer<typeof UserListFiltersSchema>;
+
+// Milestones
+export const MILESTONE_STATUSES = ['planning', 'active', 'completed', 'cancelled'] as const;
+export type MilestoneStatus = (typeof MILESTONE_STATUSES)[number];
+
+export const MilestoneSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().nullish(),
+  target_date: z.string().nullish(),
+  status: z.enum(MILESTONE_STATUSES),
+  progress: z.number(),
+  version: z.string().nullish(),
+  project_id: z.number(),
+  created_by_id: z.number(),
+  issue_count: z.number().optional(),
+  completed_issue_count: z.number().optional(),
+  overdue: z.boolean().optional(),
+  days_remaining: z.number().nullish(),
+  created_at: z.string(),
+  updated_at: z.string()
+});
+
+export type Milestone = z.infer<typeof MilestoneSchema>;
+
+export const MilestoneInputSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  target_date: z.string().optional(),
+  status: z.enum(MILESTONE_STATUSES).optional(),
+  version: z.string().max(50).optional()
+});
+
+export type MilestoneInput = z.infer<typeof MilestoneInputSchema>;
+
+export const MilestoneUpdateSchema = MilestoneInputSchema.partial();
+export type MilestoneUpdate = z.infer<typeof MilestoneUpdateSchema>;
+
+export const MilestoneListFiltersSchema = z.object({
+  status: z.enum(MILESTONE_STATUSES).optional()
+});
+
+export type MilestoneListFilters = z.infer<typeof MilestoneListFiltersSchema>;

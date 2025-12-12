@@ -5,6 +5,7 @@
 import { IssueTools } from './tools/issues.js';
 import { ProjectTools } from './tools/projects.js';
 import { UserTools } from './tools/users.js';
+import { MilestoneTools } from './tools/milestones.js';
 import { errorToJsonRpcCode, JSON_RPC_ERRORS } from './errors/index.js';
 import { log } from './utils/logger.js';
 import { randomUUID } from 'crypto';
@@ -13,7 +14,8 @@ export class MCPHandler {
   constructor(
     private issueTools: IssueTools,
     private projectTools: ProjectTools,
-    private userTools: UserTools
+    private userTools: UserTools,
+    private milestoneTools: MilestoneTools
   ) {}
 
   async handleMessage(message: Record<string, unknown>): Promise<Record<string, unknown> | undefined> {
@@ -64,7 +66,8 @@ export class MCPHandler {
               tools: [
                 ...this.issueTools.listToolDefinitions(),
                 ...this.projectTools.listToolDefinitions(),
-                ...this.userTools.listToolDefinitions()
+                ...this.userTools.listToolDefinitions(),
+                ...this.milestoneTools.listToolDefinitions()
               ]
             }
           };
@@ -85,7 +88,15 @@ export class MCPHandler {
                   result = await this.projectTools.call(toolName, toolArgs);
                 } catch (e2) {
                   if (e2 instanceof Error && e2.message.includes('Unknown tool')) {
-                    result = await this.userTools.call(toolName, toolArgs);
+                    try {
+                      result = await this.userTools.call(toolName, toolArgs);
+                    } catch (e3) {
+                      if (e3 instanceof Error && e3.message.includes('Unknown tool')) {
+                        result = await this.milestoneTools.call(toolName, toolArgs);
+                      } else {
+                        throw e3;
+                      }
+                    }
                   } else {
                     throw e2;
                   }

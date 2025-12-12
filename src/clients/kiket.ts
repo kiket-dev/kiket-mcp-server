@@ -19,7 +19,12 @@ import {
   ProjectListFilters,
   UserSchema,
   User,
-  UserListFilters
+  UserListFilters,
+  MilestoneSchema,
+  Milestone,
+  MilestoneInput,
+  MilestoneUpdate,
+  MilestoneListFilters
 } from '../types/kiket.js';
 import {
   errorFromStatusCode,
@@ -289,5 +294,44 @@ export class KiketClient {
       const response = await this.client.get(url);
       return IssueSchemaResponseSchema.parse(response.data);
     }, 'Get issue schema');
+  }
+
+  // Milestones
+  async listMilestones(projectIdOrKey: string | number, filters: MilestoneListFilters = {}): Promise<Milestone[]> {
+    return this.withRateLimit(async () => {
+      const response = await this.client.get(`/api/v1/projects/${projectIdOrKey}/milestones`, { params: filters });
+      return z.array(MilestoneSchema).parse(response.data.milestones ?? response.data);
+    }, 'List milestones');
+  }
+
+  async getMilestone(projectIdOrKey: string | number, milestoneId: number): Promise<Milestone> {
+    return this.withRateLimit(async () => {
+      const response = await this.client.get(`/api/v1/projects/${projectIdOrKey}/milestones/${milestoneId}`);
+      return MilestoneSchema.parse(response.data.milestone ?? response.data);
+    }, 'Get milestone');
+  }
+
+  async createMilestone(projectIdOrKey: string | number, payload: MilestoneInput): Promise<Milestone> {
+    return this.withRateLimit(async () => {
+      const response = await this.client.post(`/api/v1/projects/${projectIdOrKey}/milestones`, {
+        milestone: payload
+      });
+      return MilestoneSchema.parse(response.data.milestone ?? response.data);
+    }, 'Create milestone');
+  }
+
+  async updateMilestone(projectIdOrKey: string | number, milestoneId: number, payload: MilestoneUpdate): Promise<Milestone> {
+    return this.withRateLimit(async () => {
+      const response = await this.client.patch(`/api/v1/projects/${projectIdOrKey}/milestones/${milestoneId}`, {
+        milestone: payload
+      });
+      return MilestoneSchema.parse(response.data.milestone ?? response.data);
+    }, 'Update milestone');
+  }
+
+  async deleteMilestone(projectIdOrKey: string | number, milestoneId: number): Promise<void> {
+    return this.withRateLimit(async () => {
+      await this.client.delete(`/api/v1/projects/${projectIdOrKey}/milestones/${milestoneId}`);
+    }, 'Delete milestone');
   }
 }
