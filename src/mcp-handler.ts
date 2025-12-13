@@ -6,17 +6,22 @@ import { IssueTools } from './tools/issues.js';
 import { ProjectTools } from './tools/projects.js';
 import { UserTools } from './tools/users.js';
 import { MilestoneTools } from './tools/milestones.js';
+import { PromptsHandler } from './prompts/index.js';
 import { errorToJsonRpcCode, JSON_RPC_ERRORS } from './errors/index.js';
 import { log } from './utils/logger.js';
 import { randomUUID } from 'crypto';
 
 export class MCPHandler {
+  private promptsHandler: PromptsHandler;
+
   constructor(
     private issueTools: IssueTools,
     private projectTools: ProjectTools,
     private userTools: UserTools,
     private milestoneTools: MilestoneTools
-  ) {}
+  ) {
+    this.promptsHandler = new PromptsHandler();
+  }
 
   async handleMessage(message: Record<string, unknown>): Promise<Record<string, unknown> | undefined> {
     const { id, method, params } = message;
@@ -49,6 +54,10 @@ export class MCPHandler {
                 tools: {
                   list: true,
                   call: true
+                },
+                prompts: {
+                  list: true,
+                  get: true
                 }
               }
             }
@@ -135,6 +144,52 @@ export class MCPHandler {
               }
             };
           }
+        }
+
+        case 'prompts/list':
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              prompts: this.promptsHandler.listPrompts()
+            }
+          };
+
+        case 'prompts/get': {
+          const promptParams = (params as Record<string, unknown>) ?? {};
+          const { name, arguments: promptArgs } = promptParams;
+          const promptName = name as string;
+          const promptArguments = (promptArgs as Record<string, string>) ?? {};
+
+          if (!promptName) {
+            return {
+              jsonrpc: '2.0',
+              id,
+              error: {
+                code: JSON_RPC_ERRORS.INVALID_PARAMS,
+                message: 'Prompt name is required'
+              }
+            };
+          }
+
+          const result = this.promptsHandler.getPrompt(promptName, promptArguments);
+
+          if (!result) {
+            return {
+              jsonrpc: '2.0',
+              id,
+              error: {
+                code: JSON_RPC_ERRORS.INVALID_PARAMS,
+                message: `Unknown prompt: ${promptName}`
+              }
+            };
+          }
+
+          return {
+            jsonrpc: '2.0',
+            id,
+            result
+          };
         }
 
         case 'ping':

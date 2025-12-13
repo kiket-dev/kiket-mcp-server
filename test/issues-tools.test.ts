@@ -25,7 +25,8 @@ describe('IssueTools', () => {
       'listComments',
       'createComment',
       'updateComment',
-      'deleteComment'
+      'deleteComment',
+      'getIssueSchema'
     ]);
   });
 

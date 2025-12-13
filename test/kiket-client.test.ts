@@ -68,7 +68,7 @@ describe('KiketClient', () => {
     expect(mockInstance.post).toHaveBeenCalledWith('/api/v1/issues', {
       project_key: 'PRJ',
       project_id: undefined,
-      issue: { title: 'Test', project_key: 'PRJ' }
+      issue: { title: 'Test', project_key: 'PRJ', issue_type: 'Task', status: 'backlog' }
     });
   });
 

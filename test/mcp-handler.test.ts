@@ -3,17 +3,20 @@ import { MCPHandler } from '../src/mcp-handler.js';
 import { IssueTools } from '../src/tools/issues.js';
 import { ProjectTools } from '../src/tools/projects.js';
 import { UserTools } from '../src/tools/users.js';
+import { MilestoneTools } from '../src/tools/milestones.js';
 import { JSON_RPC_ERRORS } from '../src/errors/index.js';
 
 vi.mock('../src/tools/issues.js');
 vi.mock('../src/tools/projects.js');
 vi.mock('../src/tools/users.js');
+vi.mock('../src/tools/milestones.js');
 
 describe('MCPHandler', () => {
   let handler: MCPHandler;
   let mockIssueTools: any;
   let mockProjectTools: any;
   let mockUserTools: any;
+  let mockMilestoneTools: any;
 
   beforeEach(() => {
     mockIssueTools = {
@@ -38,7 +41,14 @@ describe('MCPHandler', () => {
       call: vi.fn()
     };
 
-    handler = new MCPHandler(mockIssueTools, mockProjectTools, mockUserTools);
+    mockMilestoneTools = {
+      listToolDefinitions: vi.fn().mockReturnValue([
+        { name: 'listMilestones', description: 'List milestones', inputSchema: {} }
+      ]),
+      call: vi.fn()
+    };
+
+    handler = new MCPHandler(mockIssueTools, mockProjectTools, mockUserTools, mockMilestoneTools);
   });
 
   describe('initialize', () => {
@@ -56,7 +66,7 @@ describe('MCPHandler', () => {
         jsonrpc: '2.0',
         id: 1,
         result: {
-          protocolVersion: '0.1',
+          protocolVersion: '2024-11-05',
           serverInfo: {
             name: 'kiket-mcp-server',
             version: '0.1.0'
@@ -65,6 +75,10 @@ describe('MCPHandler', () => {
             tools: {
               list: true,
               call: true
+            },
+            prompts: {
+              list: true,
+              get: true
             }
           }
         }
@@ -90,13 +104,15 @@ describe('MCPHandler', () => {
           tools: [
             ...mockIssueTools.listToolDefinitions(),
             ...mockProjectTools.listToolDefinitions(),
-            ...mockUserTools.listToolDefinitions()
+            ...mockUserTools.listToolDefinitions(),
+            ...mockMilestoneTools.listToolDefinitions()
           ]
         }
       });
       expect(mockIssueTools.listToolDefinitions).toHaveBeenCalled();
       expect(mockProjectTools.listToolDefinitions).toHaveBeenCalled();
       expect(mockUserTools.listToolDefinitions).toHaveBeenCalled();
+      expect(mockMilestoneTools.listToolDefinitions).toHaveBeenCalled();
     });
   });
 
@@ -120,7 +136,14 @@ describe('MCPHandler', () => {
       expect(response).toEqual({
         jsonrpc: '2.0',
         id: 3,
-        result: toolResult
+        result: {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(toolResult, null, 2)
+            }
+          ]
+        }
       });
       expect(mockIssueTools.call).toHaveBeenCalledWith('listIssues', { status: 'open' });
     });
@@ -169,7 +192,8 @@ describe('MCPHandler', () => {
 
     it('should call project tools', async () => {
       mockIssueTools.call.mockRejectedValue(new Error('Unknown tool: listProjects'));
-      mockProjectTools.call.mockResolvedValue({ projects: [{ id: 1, name: 'Test' }] });
+      const projectResult = { projects: [{ id: 1, name: 'Test' }] };
+      mockProjectTools.call.mockResolvedValue(projectResult);
 
       const message = {
         jsonrpc: '2.0',
@@ -186,7 +210,14 @@ describe('MCPHandler', () => {
       expect(response).toEqual({
         jsonrpc: '2.0',
         id: 6,
-        result: { projects: [{ id: 1, name: 'Test' }] }
+        result: {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(projectResult, null, 2)
+            }
+          ]
+        }
       });
       expect(mockProjectTools.call).toHaveBeenCalledWith('listProjects', {});
     });
@@ -194,7 +225,8 @@ describe('MCPHandler', () => {
     it('should call user tools', async () => {
       mockIssueTools.call.mockRejectedValue(new Error('Unknown tool: listUsers'));
       mockProjectTools.call.mockRejectedValue(new Error('Unknown tool: listUsers'));
-      mockUserTools.call.mockResolvedValue({ users: [{ id: 1, name: 'User' }] });
+      const userResult = { users: [{ id: 1, name: 'User' }] };
+      mockUserTools.call.mockResolvedValue(userResult);
 
       const message = {
         jsonrpc: '2.0',
@@ -211,9 +243,50 @@ describe('MCPHandler', () => {
       expect(response).toEqual({
         jsonrpc: '2.0',
         id: 7,
-        result: { users: [{ id: 1, name: 'User' }] }
+        result: {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(userResult, null, 2)
+            }
+          ]
+        }
       });
       expect(mockUserTools.call).toHaveBeenCalledWith('listUsers', {});
+    });
+
+    it('should call milestone tools', async () => {
+      mockIssueTools.call.mockRejectedValue(new Error('Unknown tool: listMilestones'));
+      mockProjectTools.call.mockRejectedValue(new Error('Unknown tool: listMilestones'));
+      mockUserTools.call.mockRejectedValue(new Error('Unknown tool: listMilestones'));
+      const milestoneResult = { milestones: [{ id: 1, title: 'Sprint 1' }] };
+      mockMilestoneTools.call.mockResolvedValue(milestoneResult);
+
+      const message = {
+        jsonrpc: '2.0',
+        id: 8,
+        method: 'tools/call',
+        params: {
+          name: 'listMilestones',
+          arguments: {}
+        }
+      };
+
+      const response = await handler.handleMessage(message);
+
+      expect(response).toEqual({
+        jsonrpc: '2.0',
+        id: 8,
+        result: {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(milestoneResult, null, 2)
+            }
+          ]
+        }
+      });
+      expect(mockMilestoneTools.call).toHaveBeenCalledWith('listMilestones', {});
     });
   });
 

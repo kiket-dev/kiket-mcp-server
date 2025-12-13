@@ -4,13 +4,18 @@ Model Context Protocol (MCP) server that provides AI tools to interact with Kike
 
 ## Features
 
-- **17 MCP Tools** for comprehensive Kiket management:
-  - **Issues** (5 tools):
+- **16 MCP Prompts** for guided workflows:
+  - **Issue Management**: create-issue, create-bug-report, create-feature, update-issue, bulk-update-issues, close-issue, delete-issue
+  - **Milestone Management**: create-milestone, plan-sprint, update-milestone, close-milestone, delete-milestone
+  - **Analysis & Reporting**: daily-standup, release-notes, backlog-review, project-overview
+- **22 MCP Tools** for comprehensive Kiket management:
+  - **Issues** (6 tools):
     - `listIssues` - List issues with filters
     - `getIssue` - Fetch single issue
     - `createIssue` - Create new issue
     - `updateIssue` - Update issue fields
     - `transitionIssue` - Move issue through workflow
+    - `getIssueSchema` - Get available issue types, priorities, statuses
   - **Comments** (4 tools):
     - `listComments` - List comments on issue
     - `createComment` - Add comment to issue
@@ -22,6 +27,12 @@ Model Context Protocol (MCP) server that provides AI tools to interact with Kike
     - `createProject` - Create new project
     - `updateProject` - Update project settings
     - `deleteProject` - Archive/delete project
+  - **Milestones** (5 tools):
+    - `listMilestones` - List milestones for a project
+    - `getMilestone` - Get milestone details
+    - `createMilestone` - Create new milestone/sprint
+    - `updateMilestone` - Update milestone settings
+    - `deleteMilestone` - Delete milestone
   - **Users** (3 tools):
     - `listUsers` - List project members
     - `getUser` - Fetch user details
@@ -33,7 +44,7 @@ Model Context Protocol (MCP) server that provides AI tools to interact with Kike
   - **Rate Limiting**: Automatic retry with exponential backoff (429, 5xx errors)
   - **Health Checks**: HTTP endpoints for monitoring and Kubernetes readiness probes
 - **Type-Safe**: Full TypeScript with Zod validation
-- **Comprehensive Tests**: 55+ test cases with Vitest
+- **Comprehensive Tests**: 85+ test cases with Vitest
 
 ## Installation
 
@@ -247,6 +258,54 @@ MCP_TRANSPORT=stdio npm run dev
 }
 ```
 
+### Milestone Management
+
+**`listMilestones`**
+```json
+{
+  "project_id": 5,
+  "status": "active"
+}
+```
+
+**`getMilestone`**
+```json
+{
+  "project_id": 5,
+  "milestone_id": 123
+}
+```
+
+**`createMilestone`**
+```json
+{
+  "project_id": 5,
+  "name": "Sprint 42",
+  "description": "Q1 2025 release",
+  "target_date": "2025-03-31",
+  "status": "planning"
+}
+```
+
+**`updateMilestone`**
+```json
+{
+  "project_id": 5,
+  "milestone_id": 123,
+  "name": "Sprint 42 - Extended",
+  "target_date": "2025-04-15",
+  "status": "active"
+}
+```
+
+**`deleteMilestone`**
+```json
+{
+  "project_id": 5,
+  "milestone_id": 123
+}
+```
+
 ### User Management
 
 **`listUsers`**
@@ -268,6 +327,65 @@ MCP_TRANSPORT=stdio npm run dev
 ```json
 {}
 ```
+
+## Available Prompts
+
+Prompts are guided templates that help AI assistants perform complex workflows. Use them to ensure consistent, well-structured interactions with Kiket.
+
+### Issue Management Prompts
+
+| Prompt | Description | Key Arguments |
+|--------|-------------|---------------|
+| `create-issue` | Create a new issue with proper structure | `title` (required), `type`, `priority`, `description` |
+| `create-bug-report` | Create a structured bug report | `title` (required), `steps`, `expected`, `actual` |
+| `create-feature` | Create a feature/user story with acceptance criteria | `title` (required), `user_story`, `acceptance_criteria`, `breakdown` |
+| `update-issue` | Update an existing issue | `issue_id` (required), `changes` |
+| `bulk-update-issues` | Update multiple issues at once | `filter` (required), `action` (required) |
+| `close-issue` | Close/resolve an issue | `issue_id` (required), `resolution`, `comment` |
+| `delete-issue` | Delete an issue (with safety checks) | `issue_id` (required), `reason` |
+
+### Milestone Management Prompts
+
+| Prompt | Description | Key Arguments |
+|--------|-------------|---------------|
+| `create-milestone` | Create a new milestone/sprint | `title` (required), `start_date`, `due_date`, `description` |
+| `plan-sprint` | Plan a sprint with capacity and issue selection | `sprint_name` (required), `capacity`, `goals`, `duration` |
+| `update-milestone` | Update milestone details | `milestone_id` (required), `changes` |
+| `close-milestone` | Close a milestone and handle incomplete issues | `milestone_id` (required), `incomplete_action` |
+| `delete-milestone` | Delete a milestone | `milestone_id` (required), `issue_action` |
+
+### Analysis & Reporting Prompts
+
+| Prompt | Description | Key Arguments |
+|--------|-------------|---------------|
+| `daily-standup` | Generate daily standup summary | `user`, `days` |
+| `release-notes` | Generate release notes from completed issues | `milestone` (required), `format` |
+| `backlog-review` | Review and clean up backlog | `project_key`, `stale_days` |
+| `project-overview` | Get comprehensive project overview | `project_key` |
+
+### Using Prompts
+
+Prompts are invoked via the `prompts/get` MCP method. Example:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "prompts/get",
+  "params": {
+    "name": "create-bug-report",
+    "arguments": {
+      "title": "Login button not responding",
+      "steps": "1. Go to login page\n2. Enter credentials\n3. Click login button",
+      "expected": "User should be logged in",
+      "actual": "Nothing happens",
+      "priority": "high"
+    }
+  }
+}
+```
+
+The prompt returns a structured message that guides the AI through the workflow, including which tools to call and in what order.
 
 ## Client Configuration
 

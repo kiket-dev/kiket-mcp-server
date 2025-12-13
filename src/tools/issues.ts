@@ -12,7 +12,7 @@ import { KiketClient } from '../clients/kiket.js';
 function toFlatSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   const result = zodToJsonSchema(schema, { $refStrategy: 'none' });
   // Remove $schema key as MCP doesn't need it
-  const { $schema, ...rest } = result as Record<string, unknown>;
+  const { $schema: _, ...rest } = result as Record<string, unknown>;
   return rest;
 }
 

@@ -3,15 +3,14 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import {
   MilestoneSchema,
   MilestoneInputSchema,
-  MilestoneUpdateSchema,
-  MilestoneListFiltersSchema
+  MilestoneUpdateSchema
 } from '../types/kiket.js';
 import { KiketClient } from '../clients/kiket.js';
 
 // Helper to produce flat JSON schemas without $ref
 function toFlatSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   const result = zodToJsonSchema(schema, { $refStrategy: 'none' });
-  const { $schema, ...rest } = result as Record<string, unknown>;
+  const { $schema: _, ...rest } = result as Record<string, unknown>;
   return rest;
 }
 
