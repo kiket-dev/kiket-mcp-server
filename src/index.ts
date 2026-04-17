@@ -16,22 +16,17 @@ registerTools(server, {
   organizationId: process.env.KIKET_ORGANIZATION_ID,
 });
 
-server.prompt(
-  'kiket_strategy',
-  'Explain the strategy and future vision of the Kiket MCP server.',
-  {},
-  async () => ({
-    messages: [
-      {
-        role: 'user',
-        content: {
-          type: 'text',
-          text: strategyPrompt,
-        },
+server.prompt('kiket_strategy', 'Explain the strategy and future vision of the Kiket MCP server.', {}, async () => ({
+  messages: [
+    {
+      role: 'user',
+      content: {
+        type: 'text',
+        text: strategyPrompt,
       },
-    ],
-  }),
-);
+    },
+  ],
+}));
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
