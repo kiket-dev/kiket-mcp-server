@@ -9,7 +9,7 @@ The server is designed around a simple rule: only expose MCP tools for real, sta
 - no legacy path compatibility
 - no Rails-era snake_case DTO assumptions
 - no fake tools for endpoints that do not exist
-- one shared typed client package (`@kiket/api-client`) used by runtime and tests
+- one typed in-repo client contract layer shared by runtime and tests
 
 ## Future Vision
 
