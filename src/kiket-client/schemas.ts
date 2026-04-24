@@ -92,6 +92,28 @@ export const transitionResultSchema = z.object({
   blockers: z.array(z.object({ type: z.string(), message: z.string() })).optional(),
 });
 
+export const transitionInfoSchema = z.object({
+  name: z.string(),
+  targetState: z.string(),
+  targetStateLabel: z.string(),
+  allowed: z.boolean(),
+  blockers: z.array(z.object({ type: z.string(), message: z.string() })),
+});
+
+export const reachableStatesSchema = z.object({
+  states: z.array(z.string()),
+  transitions: z.array(transitionInfoSchema),
+});
+
+export const canTransitionResultSchema = z.object({
+  allowed: z.boolean(),
+  blockers: z.array(z.object({ type: z.string(), message: z.string() })),
+});
+
+export const issueHistorySchema = z.object({
+  events: z.array(z.record(z.string(), z.unknown())),
+});
+
 export const issueTypeSchema = z.object({
   key: z.string(),
   label: z.string(),
@@ -214,6 +236,105 @@ export const templateDefinitionListSchema = z.object({
   templates: z.array(templateDefinitionSchema),
 });
 
+export const searchResultSchema = z.object({
+  type: z.string(),
+  id: z.string(),
+  title: z.string(),
+  snippet: z.string(),
+  score: z.number(),
+});
+
+export const searchResponseSchema = z.object({
+  results: z.array(searchResultSchema),
+});
+
+export const knowledgeDocumentSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  body: z.string(),
+  category: z.string().nullable(),
+  tags: z.array(z.string()),
+  createdBy: z.string().uuid().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const knowledgeDocumentListSchema = z.object({
+  data: z.array(knowledgeDocumentSchema),
+});
+
+export const auditLogSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  actorId: z.string().uuid().nullable(),
+  action: z.string(),
+  resourceType: z.string(),
+  resourceId: z.string().uuid().nullable(),
+  metadata: z.record(z.string(), z.unknown()),
+  contentHash: z.string().nullable(),
+  ipAddress: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export const auditLogListSchema = z.object({
+  data: z.array(auditLogSchema),
+});
+
+export const complianceReportSchema = z.object({
+  data: z.unknown(),
+});
+
+export const repositorySchema = z.object({
+  id: z.string().uuid(),
+  orgId: z.string(),
+  repoUrl: z.string(),
+  branch: z.string(),
+  status: z.enum(['cloning', 'ready', 'syncing', 'error', 'connected']),
+  lastPulledAt: z.string().nullable(),
+  fileCount: z.number(),
+  error: z.string().nullable(),
+  webhookId: z.string().nullable(),
+  projectId: z.string().nullable(),
+  syncMode: z.enum(['webhook', 'scheduled', 'manual']),
+  syncIntervalMinutes: z.number().nullable(),
+});
+
+export const repositoryListSchema = z.object({
+  data: z.array(repositorySchema),
+});
+
+export const repositoryTreeNodeSchema = z.object({
+  name: z.string(),
+  path: z.string(),
+  type: z.enum(['file', 'directory']),
+  children: z.array(z.unknown()).optional(),
+});
+
+export const repositoryTreeSchema = z.object({
+  data: z.array(repositoryTreeNodeSchema),
+});
+
+export const repositoryFileSchema = z.object({
+  path: z.string(),
+  content: z.string(),
+  type: z.enum(['workflow', 'board', 'intake', 'issue_type', 'template', 'automation', 'dashboard', 'other']),
+});
+
+export const repositoryDiffSchema = z.object({
+  data: z.array(z.object({ path: z.string(), status: z.enum(['added', 'modified', 'deleted']) })),
+});
+
+export const repositoryLogSchema = z.object({
+  data: z.array(
+    z.object({
+      sha: z.string(),
+      message: z.string(),
+      author: z.string(),
+      date: z.string(),
+    }),
+  ),
+});
+
 export type CurrentUser = z.infer<typeof currentUserSchema>;
 export type Organization = z.infer<typeof organizationSchema>;
 export type Project = z.infer<typeof projectSchema>;
@@ -223,3 +344,6 @@ export type Milestone = z.infer<typeof milestoneSchema>;
 export type Comment = z.infer<typeof commentSchema>;
 export type Workflow = z.infer<typeof workflowSchema>;
 export type TemplateDefinition = z.infer<typeof templateDefinitionSchema>;
+export type KnowledgeDocument = z.infer<typeof knowledgeDocumentSchema>;
+export type AuditLog = z.infer<typeof auditLogSchema>;
+export type Repository = z.infer<typeof repositorySchema>;

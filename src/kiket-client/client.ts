@@ -1,18 +1,33 @@
 import { z } from 'zod';
 import { KiketClientError } from './errors.js';
 import {
+  auditLogListSchema,
+  auditLogSchema,
+  canTransitionResultSchema,
   commentListSchema,
   commentSchema,
+  complianceReportSchema,
   currentUserSchema,
+  issueHistorySchema,
   issueListSchema,
   issueSchema,
   issueTypeListSchema,
+  knowledgeDocumentListSchema,
+  knowledgeDocumentSchema,
   milestoneListSchema,
   milestoneSchema,
   organizationListSchema,
   organizationSchema,
   projectListSchema,
   projectSchema,
+  reachableStatesSchema,
+  repositoryDiffSchema,
+  repositoryFileSchema,
+  repositoryListSchema,
+  repositoryLogSchema,
+  repositorySchema,
+  repositoryTreeSchema,
+  searchResponseSchema,
   templateDefinitionListSchema,
   templateDefinitionSchema,
   transitionResultSchema,
@@ -174,6 +189,26 @@ export class KiketClient {
     });
   }
 
+  async getIssueReachableStates(issueId: string) {
+    return this.request(`/api/v1/issues/${issueId}/reachable-states`, {
+      schema: reachableStatesSchema,
+    });
+  }
+
+  async checkIssueTransition(issueId: string, targetState: string) {
+    return this.request(`/api/v1/issues/${issueId}/check-transition`, {
+      method: 'POST',
+      body: { targetState },
+      schema: canTransitionResultSchema,
+    });
+  }
+
+  async getIssueHistory(issueId: string) {
+    return this.request(`/api/v1/issues/${issueId}/history`, {
+      schema: issueHistorySchema,
+    });
+  }
+
   async createIssue(input: {
     workflowKey: string;
     workflowRepoId?: string;
@@ -320,6 +355,82 @@ export class KiketClient {
       throw await this.buildError(response);
     }
     return response.text();
+  }
+
+  async search(query: string) {
+    return this.request('/api/v1/search', {
+      searchParams: { q: query },
+      schema: searchResponseSchema,
+    }).then((body) => body.results);
+  }
+
+  async semanticSearch(query: string, limit?: number) {
+    return this.request('/api/v1/search/semantic', {
+      searchParams: { q: query, limit },
+      schema: searchResponseSchema,
+    }).then((body) => body.results);
+  }
+
+  async listKnowledgeDocuments(search?: string) {
+    return this.request('/api/v1/knowledge', {
+      searchParams: { search },
+      schema: knowledgeDocumentListSchema,
+    }).then((body) => body.data);
+  }
+
+  async getKnowledgeDocument(id: string) {
+    return this.request(`/api/v1/knowledge/${id}`, { schema: knowledgeDocumentSchema });
+  }
+
+  async listAuditLogs(filters: { action?: string; resourceType?: string; from?: string; to?: string; limit?: number }) {
+    return this.request('/api/v1/audit-logs', {
+      searchParams: filters,
+      schema: auditLogListSchema,
+    }).then((body) => body.data);
+  }
+
+  async getAuditLog(id: string) {
+    return this.request(`/api/v1/audit-logs/${id}`, { schema: auditLogSchema });
+  }
+
+  async getComplianceReport(type: 'sla' | 'audit' | 'gdpr' = 'sla') {
+    return this.request('/api/v1/compliance/report', {
+      searchParams: { type, format: 'json' },
+      schema: complianceReportSchema,
+    }).then((body) => body.data);
+  }
+
+  async listRepositories(projectId?: string) {
+    return this.request('/api/v1/repos', {
+      searchParams: { projectId },
+      schema: repositoryListSchema,
+    }).then((body) => body.data);
+  }
+
+  async getRepository(id: string) {
+    return this.request(`/api/v1/repos/${id}`, { schema: repositorySchema });
+  }
+
+  async getRepositoryTree(id: string) {
+    return this.request(`/api/v1/repos/${id}/tree`, { schema: repositoryTreeSchema }).then((body) => body.data);
+  }
+
+  async getRepositoryFile(id: string, path: string) {
+    return this.request(`/api/v1/repos/${id}/file`, {
+      searchParams: { path },
+      schema: repositoryFileSchema,
+    });
+  }
+
+  async getRepositoryDiff(id: string) {
+    return this.request(`/api/v1/repos/${id}/diff`, { schema: repositoryDiffSchema }).then((body) => body.data);
+  }
+
+  async getRepositoryLog(id: string, path?: string) {
+    return this.request(`/api/v1/repos/${id}/log`, {
+      searchParams: { path },
+      schema: repositoryLogSchema,
+    }).then((body) => body.data);
   }
 
   private headers(extra: Record<string, string> = {}, includeAuth = true): Record<string, string> {
