@@ -23,6 +23,7 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
+    "@kiket/api-client": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.18.0",
     "zod": "^3.25.76"
   },

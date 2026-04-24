@@ -95,4 +95,25 @@ export function registerTools(
       content: [{ type: 'text', text: JSON.stringify(issueTypes, null, 2) }],
     };
   });
+
+  server.tool('list_definitions', 'List available template definitions', {}, async () => {
+    const definitions = await client.listDefinitions();
+    return {
+      content: [{ type: 'text', text: JSON.stringify(definitions, null, 2) }],
+    };
+  });
+
+  server.tool(
+    'get_definition',
+    'Get one template definition by key',
+    {
+      key: z.string(),
+    },
+    async ({ key }) => {
+      const definition = await client.getDefinition(key);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(definition, null, 2) }],
+      };
+    },
+  );
 }
