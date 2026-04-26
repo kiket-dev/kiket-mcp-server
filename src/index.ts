@@ -1,32 +1,47 @@
 #!/usr/bin/env node
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { strategyPrompt } from './prompts/strategy.js';
-import { registerTools } from './tools/register-tools.js';
+import { stdin as input, stdout as output } from 'node:process';
+import { createInterface } from 'node:readline/promises';
+import { createMcpClient } from './client.js';
+import { callTool, tools } from './tools.js';
 
-const server = new McpServer({
-  name: '@kiket/mcp',
-  version: '0.1.0',
-});
+const client = createMcpClient();
+const lines = createInterface({ input, output: process.stderr });
 
-registerTools(server, {
-  baseUrl: process.env.KIKET_API_URL ?? 'http://localhost:3000',
-  authToken: process.env.KIKET_API_TOKEN,
-  apiKey: process.env.KIKET_API_KEY,
-  organizationId: process.env.KIKET_ORGANIZATION_ID,
-});
-
-server.prompt('kiket_strategy', 'Explain the strategy and future vision of the Kiket MCP server.', {}, async () => ({
-  messages: [
-    {
-      role: 'user',
-      content: {
-        type: 'text',
-        text: strategyPrompt,
-      },
-    },
-  ],
-}));
-
-const transport = new StdioServerTransport();
-await server.connect(transport);
+for await (const line of lines) {
+  if (!line.trim()) continue;
+  const request = JSON.parse(line) as { id?: unknown; method?: string; params?: Record<string, unknown> };
+  try {
+    const result =
+      request.method === 'tools/list'
+        ? { tools }
+        : request.method === 'tools/call'
+          ? {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    await callTool(
+                      client,
+                      String(request.params?.name ?? ''),
+                      (request.params?.arguments as Record<string, unknown> | undefined) ?? {},
+                    ),
+                    null,
+                    2,
+                  ),
+                },
+              ],
+            }
+          : (() => {
+              throw new Error(`Unsupported MCP method "${request.method ?? ''}".`);
+            })();
+    output.write(`${JSON.stringify({ jsonrpc: '2.0', id: request.id, result })}\n`);
+  } catch (error) {
+    output.write(
+      `${JSON.stringify({
+        jsonrpc: '2.0',
+        id: request.id,
+        error: { code: -32000, message: error instanceof Error ? error.message : 'MCP request failed' },
+      })}\n`,
+    );
+  }
+}

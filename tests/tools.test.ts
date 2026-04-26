@@ -1,92 +1,68 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { describe, expect, it } from 'vitest';
-import { registerTools } from '../src/tools/register-tools.js';
+import { describe, expect, it, vi } from 'vitest';
+import { callTool, tools } from '../src/tools.js';
 
-type RegisteredTool = {
-  name: string;
-  description: string;
-  handler: () => unknown;
-};
+describe('Kiket MCP tools', () => {
+  it('exposes platform resource tools without legacy project or issue semantics', () => {
+    const names = tools.map((tool) => tool.name);
+    const publicText = tools
+      .map((tool) => `${tool.name} ${tool.description}`)
+      .join('\n')
+      .toLowerCase();
 
-function createFakeServer() {
-  const tools: RegisteredTool[] = [];
-  const server = {
-    tool(name: string, description: string, _schema: unknown, handler: () => unknown) {
-      tools.push({ name, description, handler });
-    },
-  };
-  return { server: server as unknown as McpServer, tools };
-}
-
-describe('registerTools', () => {
-  it('registers the expanded safe MCP surface', () => {
-    const { server, tools } = createFakeServer();
-
-    registerTools(server, {
-      baseUrl: 'https://example.test',
-      apiKey: 'kiket_test',
-      organizationId: 'test-org',
-    });
-
-    expect(tools.map((tool) => tool.name).sort()).toEqual(
-      [
-        'add_issue_comment',
-        'check_issue_transition',
-        'create_issue',
-        'create_project',
-        'get_audit_log',
-        'get_compliance_report',
-        'get_current_context',
-        'get_current_user',
-        'get_definition',
-        'get_issue',
-        'get_issue_history',
-        'get_issue_reachable_transitions',
-        'get_knowledge_document',
-        'get_organization',
-        'get_project',
-        'get_repository',
-        'get_repository_diff',
-        'get_repository_file',
-        'get_repository_log',
-        'get_repository_tree',
-        'get_workflow',
-        'get_workflow_yaml',
-        'list_audit_logs',
-        'list_definitions',
-        'list_issue_comments',
-        'list_issue_types',
-        'list_issues',
-        'list_knowledge_documents',
-        'list_milestones',
-        'list_organizations',
-        'list_projects',
-        'list_repositories',
-        'list_workflows',
-        'search',
-        'semantic_search',
-        'transition_issue',
-        'validate_workflow',
-      ].sort(),
-    );
+    expect(names).toContain('kiket_list_workspaces');
+    expect(names).toContain('kiket_list_cases');
+    expect(names).toContain('kiket_list_findings');
+    expect(names).toContain('kiket_import_evidence');
+    expect(names).toContain('kiket_generate_report');
+    expect(names).toContain('kiket_create_anchor_proof');
+    expect(names).toContain('kiket_verify_anchor');
+    expect(names.some((name) => name.includes('project') || name.includes('issue'))).toBe(false);
+    expect(publicText).not.toMatch(/\b(project|projects|issue|issues|task|tasks)\b/);
   });
 
-  it('does not expose high-risk management tools by default', () => {
-    const { server, tools } = createFakeServer();
+  it('routes tool calls through the authorized API client', async () => {
+    const client = {
+      listWorkspaces: vi.fn(async () => [{ id: 'workspace-1' }]),
+      validateConfig: vi.fn(async () => ({ valid: true, errors: [] })),
+      triggerScannerRun: vi.fn(async () => ({ run: { id: 'scan-1' }, findings: [] })),
+      importEvidence: vi.fn(async () => ({ id: 'evidence-1' })),
+      generateReport: vi.fn(async () => ({ id: 'report-1' })),
+      verifyReport: vi.fn(async () => ({ valid: true })),
+      createAnchorProof: vi.fn(async () => ({ id: 'anchor-1', status: 'local_only' })),
+      verifyAnchor: vi.fn(async () => ({ valid: true })),
+    };
 
-    registerTools(server, {
-      baseUrl: 'https://example.test',
-      apiKey: 'kiket_test',
-      organizationId: 'test-org',
+    await callTool(client as never, 'kiket_list_workspaces');
+    await callTool(client as never, 'kiket_validate_config', { yaml: 'model_version: 2' });
+    await callTool(client as never, 'kiket_trigger_scan', { idempotencyKey: 'mcp:test' });
+    await callTool(client as never, 'kiket_import_evidence', {
+      evidenceType: 'approval',
+      title: 'Approval',
+      sourceSystem: 'github',
+      dedupeKey: 'approval:1',
     });
+    await callTool(client as never, 'kiket_generate_report', { reportKey: 'audit', title: 'Audit' });
+    await callTool(client as never, 'kiket_verify_report', { reportId: 'report-1' });
+    await callTool(client as never, 'kiket_create_anchor_proof', {
+      subjectType: 'evidence',
+      subjectId: 'evidence-1',
+      subjectHash: 'abc123',
+      requestSubmission: true,
+    });
+    await callTool(client as never, 'kiket_verify_anchor', { anchorId: 'anchor-1' });
 
-    const names = tools.map((tool) => tool.name);
-
-    expect(names).not.toContain('create_api_key');
-    expect(names).not.toContain('delete_api_key');
-    expect(names).not.toContain('admin_list_users');
-    expect(names).not.toContain('export_audit_logs');
-    expect(names).not.toContain('commit_repository_file');
-    expect(names).not.toContain('push_repository');
+    expect(client.listWorkspaces).toHaveBeenCalled();
+    expect(client.validateConfig).toHaveBeenCalledWith('model_version: 2');
+    expect(client.triggerScannerRun).toHaveBeenCalledWith({ trigger: 'manual', idempotencyKey: 'mcp:test' });
+    expect(client.importEvidence).toHaveBeenCalled();
+    expect(client.generateReport).toHaveBeenCalledWith({ reportKey: 'audit', title: 'Audit' });
+    expect(client.verifyReport).toHaveBeenCalledWith('report-1');
+    expect(client.createAnchorProof).toHaveBeenCalledWith({
+      subjectType: 'evidence',
+      subjectId: 'evidence-1',
+      subjectHash: 'abc123',
+      requestSubmission: true,
+    });
+    expect(client.verifyAnchor).toHaveBeenCalledWith('anchor-1');
   });
 });

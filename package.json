@@ -1,35 +1,25 @@
 {
   "name": "@kiket/mcp",
   "version": "0.1.0",
-  "description": "Modern TypeScript MCP server for Kiket",
+  "private": true,
+  "description": "Kiket MCP tools over the authorized platform API model",
   "type": "module",
-  "packageManager": "pnpm@10.8.0",
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "bin": {
-    "kiket-mcp-server": "./dist/index.js"
+    "kiket-mcp": "./dist/index.js"
   },
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
     "check": "tsc --noEmit",
-    "lint": "biome check src tests vitest.config.ts biome.json",
-    "clean": "rm -rf dist coverage"
+    "lint": "biome check --diagnostic-level=error src/ tests/",
+    "test": "vitest run tests/tools.test.ts",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.18.0",
-    "zod": "^3.25.76"
+    "@kiket/api-client": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
     "@types/node": "^24.5.2",
-    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^3.2.0"
   }
