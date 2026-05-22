@@ -1,23 +1,12 @@
 # `@kiket/mcp`
 
-Modern TypeScript MCP server for Kiket. It exposes agent-facing tools over the authorized operational compliance platform API.
+Model Context Protocol server for Kiket — agent-facing tools over the authorized operational compliance platform API.
 
-## Strategy
+## Role in the monorepo
 
-The server is designed around a simple rule: only expose MCP tools for real, stable API capabilities.
+Exposes only stable, real API capabilities (no legacy paths or fake tools). Uses `@kiket/api-client` for contract alignment. Submodule checkout: see [docs/architecture/submodules.md](../docs/architecture/submodules.md).
 
-- no legacy path compatibility
-- no stale DTO assumptions
-- no fake tools for endpoints that do not exist
-- one shared `@kiket/api-client` contract layer
-
-## Future Vision
-
-- generated contract types from the API OpenAPI document
-- HTTP transport support for hosted MCP deployments if needed
-- stronger integration tests against a real local Kiket API
-
-## Current Tool Surface
+## Current tool surface
 
 - `kiket_list_workspaces`
 - `kiket_list_processes`
@@ -51,12 +40,18 @@ The MCP server intentionally avoids broad access to high-risk API surfaces:
 
 This keeps the default MCP useful for day-to-day assistant workflows while minimizing GDPR and credential exposure risk.
 
-## Development
+## Commands
 
 ```bash
-pnpm install
-pnpm test
-pnpm check
-pnpm lint
-pnpm build
+pnpm --filter @kiket/mcp test
+pnpm --filter @kiket/mcp check
+pnpm --filter @kiket/mcp lint
+pnpm --filter @kiket/mcp build
 ```
+
+## Related docs
+
+- [CLI](../cli/README.md)
+- [API client](../packages/api-client/README.md)
+- [CLI/MCP/SDK skill](../.cursor/skills/kiket-cli-mcp-sdk/SKILL.md)
+- [Cursor MCP config](../.cursor/README.md)
