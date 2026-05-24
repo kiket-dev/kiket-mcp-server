@@ -20,6 +20,7 @@ export const tools: McpTool[] = [
   listTool('kiket_list_reports', 'List generated audit report snapshots.'),
   listTool('kiket_list_anchor_proofs', 'List local and submitted audit anchor proofs.'),
   listTool('kiket_list_ingestion_failures', 'List failed or quarantined ingestion records without raw payloads.'),
+  listTool('kiket_list_event_sources', 'List configured platform event sources and ingestion health metadata.'),
   {
     name: 'kiket_validate_config',
     description: 'Validate process configuration through the authenticated platform API.',
@@ -136,6 +137,8 @@ export async function callTool(client: KiketClient, name: string, input: Record<
       return client.listAnchorProofs();
     case 'kiket_list_ingestion_failures':
       return client.listIngestionFailures();
+    case 'kiket_list_event_sources':
+      return client.listEventSources();
     case 'kiket_validate_config':
       return client.validateConfig(requiredString(input, 'yaml'));
     case 'kiket_run_simulation':
