@@ -58,10 +58,10 @@ describe('MCP protocol', () => {
       id: 4,
       result: { resources: [] },
     });
-    await expect(handleMcpRequest({ id: 5, method: 'prompts/list' }, context)).resolves.toEqual({
-      jsonrpc: '2.0',
-      id: 5,
-      result: { prompts: [] },
+    await expect(handleMcpRequest({ id: 5, method: 'prompts/list' }, context)).resolves.toMatchObject({
+      result: {
+        prompts: expect.arrayContaining([expect.objectContaining({ name: 'kiket_investigate_case' })]),
+      },
     });
   });
 

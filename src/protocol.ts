@@ -4,6 +4,14 @@ const SUPPORTED_PROTOCOL_VERSIONS = ['2024-11-05', '2025-03-26', '2025-06-18'] a
 const SERVER_NAME = '@kiket/mcp';
 const SERVER_VERSION = '0.1.0';
 
+const INVESTIGATION_PROMPTS = [
+  {
+    name: 'kiket_investigate_case',
+    description: 'Grounded case investigation playbook for agents using Kiket context bundles and proof primitives.',
+    arguments: [{ name: 'caseId', description: 'Operational case UUID', required: true }],
+  },
+] as const;
+
 export interface JsonRpcRequest {
   jsonrpc?: string;
   id?: string | number | null;
@@ -90,7 +98,36 @@ async function dispatchMethod(
     case 'resources/list':
       return { resources: [] };
     case 'prompts/list':
-      return { prompts: [] };
+      return { prompts: INVESTIGATION_PROMPTS };
+    case 'prompts/get': {
+      const name = String(params.name ?? '');
+      if (name !== 'kiket_investigate_case') {
+        throw new Error(`Unknown MCP prompt "${name}".`);
+      }
+      const caseId = String((params.arguments as Record<string, unknown> | undefined)?.caseId ?? '');
+      if (!caseId) throw new Error('Missing required prompt argument "caseId".');
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: [
+                'Investigate this Kiket operational case using deterministic platform APIs only.',
+                `Case id: ${caseId}`,
+                '',
+                'Steps:',
+                '1. Call kiket_get_case_context for workflow, SLA, open findings, and evidence summary.',
+                '2. Call kiket_get_case_graph for linked evidence, findings, and events.',
+                '3. For each open finding, call kiket_get_finding_context and cite finding IDs.',
+                '4. When proof is required, call kiket_generate_proof_packet and reference packetHash.',
+                '5. Never present model prose as compliance fact — cite record IDs and deep links.',
+              ].join('\n'),
+            },
+          },
+        ],
+      };
+    }
     default:
       throw new Error(`Unsupported MCP method "${method}".`);
   }
@@ -108,6 +145,7 @@ function handleInitialize(params: Record<string, unknown>): Record<string, unkno
     protocolVersion,
     capabilities: {
       tools: {},
+      prompts: {},
     },
     serverInfo: {
       name: SERVER_NAME,

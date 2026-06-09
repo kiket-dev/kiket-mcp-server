@@ -27,6 +27,16 @@ Implements the MCP JSON-RPC handshake (`initialize`, `ping`, `tools/list`, `tool
 - `kiket_verify_report`
 - `kiket_create_anchor_proof`
 - `kiket_verify_anchor`
+- `kiket_get_case_graph`
+- `kiket_get_evidence_provenance`
+- `kiket_semantic_search`
+- `kiket_get_case_context`
+- `kiket_get_finding_context`
+- `kiket_get_evidence_context`
+- `kiket_generate_proof_packet`
+- `kiket_get_scanner_run_diff`
+
+MCP prompt: `kiket_investigate_case` (grounded case investigation playbook).
 
 ## Security Boundaries
 

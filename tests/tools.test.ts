@@ -16,6 +16,10 @@ describe('Kiket MCP tools', () => {
     expect(names).toContain('kiket_generate_report');
     expect(names).toContain('kiket_create_anchor_proof');
     expect(names).toContain('kiket_verify_anchor');
+    expect(names).toContain('kiket_get_case_graph');
+    expect(names).toContain('kiket_semantic_search');
+    expect(names).toContain('kiket_get_case_context');
+    expect(names).toContain('kiket_generate_proof_packet');
     expect(names.some((name) => name.includes('project') || name.includes('issue'))).toBe(false);
     expect(publicText).not.toMatch(/\b(project|projects|issue|issues|task|tasks)\b/);
   });
@@ -30,6 +34,10 @@ describe('Kiket MCP tools', () => {
       verifyReport: vi.fn(async () => ({ valid: true })),
       createAnchorProof: vi.fn(async () => ({ id: 'anchor-1', status: 'local_only' })),
       verifyAnchor: vi.fn(async () => ({ valid: true })),
+      getCaseGraph: vi.fn(async () => ({ nodes: [], edges: [] })),
+      semanticSearch: vi.fn(async () => ({ results: [], interaction_id: null })),
+      getCaseContext: vi.fn(async () => ({ case: { id: 'case-1' } })),
+      generateProofPacket: vi.fn(async () => ({ packetHash: 'abc' })),
     };
 
     await callTool(client as never, 'kiket_list_workspaces');
@@ -64,5 +72,13 @@ describe('Kiket MCP tools', () => {
       requestSubmission: true,
     });
     expect(client.verifyAnchor).toHaveBeenCalledWith('anchor-1');
+    await callTool(client as never, 'kiket_get_case_graph', { caseId: 'case-1' });
+    await callTool(client as never, 'kiket_semantic_search', { query: 'approval evidence' });
+    await callTool(client as never, 'kiket_get_case_context', { caseId: 'case-1' });
+    await callTool(client as never, 'kiket_generate_proof_packet', { caseId: 'case-1' });
+    expect(client.getCaseGraph).toHaveBeenCalledWith('case-1');
+    expect(client.semanticSearch).toHaveBeenCalledWith('approval evidence', 10);
+    expect(client.getCaseContext).toHaveBeenCalledWith('case-1');
+    expect(client.generateProofPacket).toHaveBeenCalledWith('case-1');
   });
 });

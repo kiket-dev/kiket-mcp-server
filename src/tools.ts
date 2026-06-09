@@ -115,6 +115,57 @@ export const tools: McpTool[] = [
     description: 'Verify an audit anchor proof through the authorized platform API.',
     inputSchema: objectSchema({ anchorId: { type: 'string' } }, ['anchorId']),
   },
+  {
+    name: 'kiket_get_case_graph',
+    description: 'Get the evidence graph for a case (nodes and edges from evidence links).',
+    inputSchema: objectSchema({ caseId: { type: 'string' } }, ['caseId']),
+  },
+  {
+    name: 'kiket_get_evidence_provenance',
+    description: 'Get the evidence provenance graph for a scoped investigation (case, process, finding, or workspace).',
+    inputSchema: objectSchema({
+      caseId: { type: 'string' },
+      processId: { type: 'string' },
+      findingId: { type: 'string' },
+      workspaceId: { type: 'string' },
+    }),
+  },
+  {
+    name: 'kiket_semantic_search',
+    description: 'Semantic search across cases, findings, evidence, and audit reports with grounding metadata.',
+    inputSchema: objectSchema(
+      {
+        query: { type: 'string' },
+        limit: { type: 'number' },
+      },
+      ['query'],
+    ),
+  },
+  {
+    name: 'kiket_get_case_context',
+    description: 'Get merged investigation context for a case (workflow, SLA, findings, evidence summary, last scan).',
+    inputSchema: objectSchema({ caseId: { type: 'string' } }, ['caseId']),
+  },
+  {
+    name: 'kiket_get_finding_context',
+    description: 'Get merged investigation context for a finding (check explanation, linked evidence, parents).',
+    inputSchema: objectSchema({ findingId: { type: 'string' } }, ['findingId']),
+  },
+  {
+    name: 'kiket_get_evidence_context',
+    description: 'Get merged investigation context for an evidence record (provenance, integrity, anchors).',
+    inputSchema: objectSchema({ evidenceId: { type: 'string' } }, ['evidenceId']),
+  },
+  {
+    name: 'kiket_generate_proof_packet',
+    description: 'Generate a deterministic proof packet for a case with timeline, hashes, and anchor proofs.',
+    inputSchema: objectSchema({ caseId: { type: 'string' } }, ['caseId']),
+  },
+  {
+    name: 'kiket_get_scanner_run_diff',
+    description: 'Diff findings added and resolved between a scanner run and the previous run in scope.',
+    inputSchema: objectSchema({ runId: { type: 'string' } }, ['runId']),
+  },
 ];
 
 export async function callTool(client: KiketClient, name: string, input: Record<string, unknown> = {}) {
@@ -201,6 +252,39 @@ export async function callTool(client: KiketClient, name: string, input: Record<
       });
     case 'kiket_verify_anchor':
       return client.verifyAnchor(requiredString(input, 'anchorId'));
+    case 'kiket_get_case_graph':
+      return client.getCaseGraph(requiredString(input, 'caseId'));
+    case 'kiket_get_evidence_provenance':
+      return client.getEvidenceProvenanceGraph({
+        caseId: optionalString(input, 'caseId'),
+        processId: optionalString(input, 'processId'),
+        findingId: optionalString(input, 'findingId'),
+        workspaceId: optionalString(input, 'workspaceId'),
+      });
+    case 'kiket_semantic_search': {
+      const result = await client.semanticSearch(
+        requiredString(input, 'query'),
+        typeof input.limit === 'number' ? input.limit : 10,
+      );
+      return {
+        results: result.results,
+        interaction_id: result.interaction_id,
+        grounding: {
+          resultTypes: [...new Set(result.results.map((item) => item.type))],
+          resultCount: result.results.length,
+        },
+      };
+    }
+    case 'kiket_get_case_context':
+      return client.getCaseContext(requiredString(input, 'caseId'));
+    case 'kiket_get_finding_context':
+      return client.getFindingContext(requiredString(input, 'findingId'));
+    case 'kiket_get_evidence_context':
+      return client.getEvidenceContext(requiredString(input, 'evidenceId'));
+    case 'kiket_generate_proof_packet':
+      return client.generateProofPacket(requiredString(input, 'caseId'));
+    case 'kiket_get_scanner_run_diff':
+      return client.getScannerRunDiff(requiredString(input, 'runId'));
     default:
       throw new Error(`Unknown Kiket MCP tool "${name}".`);
   }
