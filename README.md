@@ -6,6 +6,8 @@ Model Context Protocol server for Kiket — agent-facing tools over the authoriz
 
 Exposes only stable, real API capabilities (no legacy paths or fake tools). Uses `@kiket/api-client` for contract alignment. Submodule checkout: see [docs/architecture/submodules.md](../docs/architecture/submodules.md).
 
+Implements the MCP JSON-RPC handshake (`initialize`, `ping`, `tools/list`, `tools/call`) required by Cursor MCP V2 and other current clients. Strategy for investigation tools: [docs/plans/roadmaps/ai-integration-strategy.md](../docs/plans/roadmaps/ai-integration-strategy.md).
+
 ## Current tool surface
 
 - `kiket_list_workspaces`
