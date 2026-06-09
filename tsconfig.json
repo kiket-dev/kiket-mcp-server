@@ -1,14 +1,11 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "rootDir": "src",
     "outDir": "dist",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "baseUrl": "..",
-    "paths": {
-      "@kiket/api-client": ["packages/api-client/src/index.ts"]
-    },
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/client.ts", "src/index.ts", "src/tools.ts", "tests/tools.test.ts"]
+  "include": ["src/client.ts", "src/index.ts", "src/protocol.ts", "src/tools.ts"]
 }
